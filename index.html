@@ -159,6 +159,11 @@ canvas#fx{position:fixed;inset:0;pointer-events:none;z-index:70}
 .readrow .sp{flex:1}
 .readrow svg{width:26px;height:26px;flex:none}
 #modal{z-index:65}
+.mid-form{text-align:left;font-size:14px}
+.mid-form label{display:block;font-weight:700;margin:14px 0 6px}
+.mid-form select,.mid-form input{font-family:inherit;font-size:15px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:#fff}
+.mid-form .rowf{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.mid-prev{background:#faf6f1;border-radius:12px;padding:10px 12px;margin:16px 0;font-size:13px;line-height:1.8;text-align:left}
 .sec{font-size:14px;font-weight:700;margin:14px 0 8px;display:flex;align-items:center;gap:6px}
 .sheet textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-family:inherit;font-size:15px;line-height:1.7;resize:vertical;margin:0}
 .sheet textarea:focus{outline:2px solid #f3b3bd;border-color:transparent}
@@ -254,6 +259,10 @@ mark{background:#ffe58a;border-radius:3px;padding:0 1px}
     <span class="sync" id="sync">読み込み中…</span>
   </header>
 
+  <div id="midNote" style="display:none;margin-top:14px;background:#fff;border:2px solid #f7d9cf;border-radius:16px;padding:14px 16px;font-size:14px;line-height:1.7">
+    <b>📖 すでに途中まで読んでいますか？</b><br>読み終えたところまで、まとめて入力できます。
+    <span style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn btn-red btn-sm" id="midOpen">まとめて入力する</button><button class="btn btn-ghost btn-sm" id="midSkip">第1巻から始める</button></span>
+  </div>
   <div id="bkNote" style="display:none;margin-top:14px;background:#fff8e1;border:1px solid #f3dc94;border-radius:16px;padding:12px 14px;font-size:13px;line-height:1.7"></div>
 
   <section class="hero">
@@ -360,6 +369,7 @@ mark{background:#ffe58a;border-radius:3px;padding:0 1px}
     </div>
   </section>
   <div class="tools">
+    <button class="btn btn-ghost btn-sm" id="bMid">読んだところまでまとめて入力</button>
     <button class="btn btn-ghost btn-sm" id="bExport">バックアップを保存</button>
     <button class="btn btn-ghost btn-sm" id="bImport">バックアップから復元</button>
     <button class="btn btn-ghost btn-sm" id="bReset">読了記録をリセット</button>
@@ -538,7 +548,8 @@ async function flush(){
 function countRead(){return ALL.filter(c=>state.read[c.key]).length;}
 function volDone(vi){return VOLS[vi].every((_,ci)=>state.read[(vi+1)+"-"+(ci+1)]);}
 function volCount(vi){return VOLS[vi].filter((_,ci)=>state.read[(vi+1)+"-"+(ci+1)]).length;}
-function dayCounts(){const m={};Object.values(state.read).forEach(d=>{if(d)m[d]=(m[d]||0)+1;});return m;}
+function dayCounts(){const m={};Object.values(state.read).forEach(d=>{if(d&&d!=="pre")m[d]=(m[d]||0)+1;});return m;}
+function pagesTotal(){return (state.prePages||0)+pgSum("0000","9999");}
 function activeDays(){const m=dayCounts();Object.entries(state.pages||{}).forEach(([d,v])=>{if(v>0)m[d]=(m[d]||0)+1;});return m;}
 function pgSum(from,to){let n=0;Object.entries(state.pages||{}).forEach(([d,v])=>{if(d>=from&&d<=to)n+=v;});return n;}
 function streak(){
@@ -575,8 +586,8 @@ function badgeList(){
     {e:"📖",t:"10章読了",ok:n>=10},
     {e:"🌸",t:"第1巻読了",ok:volDone(0)},
     {e:"📝",t:"はじめてのメモ",ok:Object.keys(state.notes||{}).length>0},
-    {e:"📄",t:"累計100ページ",ok:pgSum("0000","9999")>=100},
-    {e:"📚",t:"累計1000ページ",ok:pgSum("0000","9999")>=1000},
+    {e:"📄",t:"累計100ページ",ok:pagesTotal()>=100},
+    {e:"📚",t:"累計1000ページ",ok:pagesTotal()>=1000},
     {e:"✨",t:"1日の目標ページ達成",ok:!!state.pageGoal&&Object.values(state.pages||{}).some(v=>v>=state.pageGoal)},
     {e:"🔥",t:"3日連続",ok:best>=3},
     {e:"⚡",t:"7日連続",ok:best>=7},
@@ -612,6 +623,7 @@ function render(){
   document.getElementById("startIn").value=state.start||"";
   document.getElementById("pgGoalIn").value=state.pageGoal||"";
   renderPages();
+  if(typeof renderMid==="function"&&document.getElementById("midNote"))renderMid();
   document.getElementById("dEnd").textContent=fmtJ(state.end);
 }
 let heatMode="ch";
@@ -664,10 +676,10 @@ function pagePosition(n){
   return "";
 }
 function renderOverall(){
-  const tot=pgSum("0000","9999"),pct=Math.min(100,tot/TOTAL_PAGES*100),left=Math.max(0,TOTAL_PAGES-tot);
+  const tot=pagesTotal(),pct=Math.min(100,tot/TOTAL_PAGES*100),left=Math.max(0,TOTAL_PAGES-tot);
   document.getElementById("pgOverall").innerHTML=`<div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px"><span style="font-size:13px;font-weight:700">全体の進み具合（ページ）</span><span style="font-size:13px"><b style="font-size:18px">${pct.toFixed(1)}%</b>　${tot.toLocaleString()} / ${TOTAL_PAGES.toLocaleString()} ページ</span></div>
   <div class="bar"><div style="width:${pct}%"></div></div>
-  <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;font-size:12px;color:var(--sub)"><span>📍 ${tot?pagePosition(tot):"第1巻の 1ページ目から"}</span><span>残り ${left.toLocaleString()} ページ</span></div>`;
+  <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;font-size:12px;color:var(--sub)"><span>📍 ${tot?pagePosition(tot):"第1巻の 1ページ目から"}</span><span>残り ${left.toLocaleString()} ページ</span></div>${state.prePages?`<div style="font-size:11px;color:var(--sub);margin-top:4px">※ アプリを使う前に読んだ ${state.prePages.toLocaleString()} ページを含みます</div>`:""}`;
   const days=diffDays(today(),state.target||DEFAULT_TARGET);
   document.getElementById("gPacePg").textContent=left===0?"達成済み 🎉":days>0?`1日 ${Math.ceil(left/days)} ページ`:"—";
 }
@@ -729,7 +741,7 @@ function renderGrid(){
       <div class="vh"><span class="vn">第${vi+1}巻</span><span class="vp">${c}/${tot}</span></div>
       <div class="mini"><div style="width:${c/tot*100}%"></div></div>`;
     VOLS[vi].forEach((name,ci)=>{const k=(vi+1)+"-"+(ci+1),r=state.read[k],cnt=nNotes(k)+nPhotos(k);
-      h+=`<div class="chr"><button class="ch ${r?'read':''} ${popKey===k?'pop':''}" data-key="${k}">${icon(tab,!!r)}<span class="nm">${name}</span>${r?`<span class="dt">${r.slice(5).replace("-","/")}</span>`:''}</button><button class="memo ${cnt?'has':''}" data-memo="${k}" aria-label="${name}のメモ・写真">📝${cnt?`<span class="n">${cnt}</span>`:''}</button></div>`;});
+      h+=`<div class="chr"><button class="ch ${r?'read':''} ${popKey===k?'pop':''}" data-key="${k}">${icon(tab,!!r)}<span class="nm">${name}</span>${r?`<span class="dt">${r==="pre"?"既読":r.slice(5).replace("-","/")}</span>`:''}</button><button class="memo ${cnt?'has':''}" data-memo="${k}" aria-label="${name}のメモ・写真">📝${cnt?`<span class="n">${cnt}</span>`:''}</button></div>`;});
     h+=`</div>`;
   }
   document.getElementById("grid").innerHTML=h; popKey=null;
@@ -844,7 +856,7 @@ function renderSheet(){
   const notes=state.notes[c.key]||[],ph=PDB.meta[c.key]||[];
   sbox.style.setProperty("--tone",TONES[tier].tone);
   sbox.innerHTML=`<div class="sh-head"><div><div class="vlabel">第${c.vi+1}巻・${c.ci+1}章目</div><div class="ttl">${esc(c.name)}</div></div><button class="x" id="shX" aria-label="閉じる">✕</button></div>
-  <div class="readrow">${icon(tier,!!r)}<span class="sp">${r?"読了日":"まだ読んでいません"}</span>${r?`<input type="date" id="shDate" value="${r}">`:""}<button class="btn btn-sm ${r?"btn-ghost":"btn-red"}" id="shRead">${r?"未読に戻す":"読了にする"}</button></div>
+  <div class="readrow">${icon(tier,!!r)}<span class="sp">${r==="pre"?"アプリを使う前に読了":r?"読了日":"まだ読んでいません"}</span>${r?`<input type="date" id="shDate" value="${r==="pre"?"":r}" aria-label="読了日">`:""}<button class="btn btn-sm ${r?"btn-ghost":"btn-red"}" id="shRead">${r?"未読に戻す":"読了にする"}</button></div>
   <div class="sec">💬 心に響いた言葉・感想</div>
   ${notes.map(n=>editingId===n.id?"":`<div class="note">${esc(n.text)}<div class="meta">${fmtJ(n.date)}<button data-edit="${n.id}">編集</button><button data-del="${n.id}">${delArm===n.id?"もう一度押すと削除":"削除"}</button></div></div>`).join("")}
   <textarea id="shText" placeholder="心に響いた一節や、感じたことを書き留めましょう">${editingId?esc((notes.find(n=>n.id===editingId)||{}).text||""):""}</textarea>
@@ -933,6 +945,58 @@ document.addEventListener("keydown",e=>{
   else if(e.key==="Escape"&&cam.classList.contains("show"))closeCam();
   else if(e.key==="Escape"&&sheet.classList.contains("show"))closeSheet();});
 
+/* ---------- start from the middle ---------- */
+function openMid(){
+  const nx=nextChapter(),hasRead=countRead()>0;
+  const lastRead=nx?ALL[Math.max(0,ALL.indexOf(nx)-1)]:ALL[ALL.length-1];
+  const dv=hasRead?lastRead.vi:0;
+  openModal(`<div class="big">📖</div><h3>読んだところまで入力</h3>
+  <div class="mid-form">
+    <label>① 読み終えた最後の章</label>
+    <div class="rowf"><select id="midVol">${VOLS.map((_,i)=>`<option value="${i}" ${i===dv?"selected":""}>第${i+1}巻</option>`).join("")}</select><select id="midCh"></select></div>
+    <label>② 今どこまで読んだか（ページ・任意）</label>
+    <div class="rowf"><select id="midPVol">${VOL_PAGES.map((_,i)=>i===29?`<option value="29u">第30巻上</option><option value="29d">第30巻下</option>`:`<option value="${i}">第${i+1}巻</option>`).join("")}</select><span>の</span><input type="number" id="midPage" min="0" inputmode="numeric" placeholder="例：120" style="width:96px;text-align:right"><span>ページ目まで</span></div>
+    <div style="font-size:11px;color:var(--sub);margin-top:6px">空欄なら、①の巻を最後まで読んだ場合のみページを自動で計算します。</div>
+  </div>
+  <div class="mid-prev" id="midPrev"></div>
+  <div class="acts"><button class="btn btn-ghost" id="mCancel">やめる</button><button class="btn btn-red" id="mOk">入力する</button></div>`);
+  const $=id=>document.getElementById(id);
+  const fillCh=()=>{const v=+$("midVol").value;const cur=(hasRead&&v===lastRead.vi)?lastRead.ci:VOLS[v].length-1;
+    $("midCh").innerHTML=VOLS[v].map((n,ci)=>`<option value="${ci}" ${ci===cur?"selected":""}>${ci+1}. ${n}</option>`).join("");};
+  const syncPVol=()=>{const v=+$("midVol").value,ci=+$("midCh").value,last=ci===VOLS[v].length-1;
+    let pv=(last&&v<29)?String(v+1):String(v);if(pv==="29")pv=(v===29&&ci>=3)?"29d":"29u";$("midPVol").value=pv;};
+  const calc=()=>{const v=+$("midVol").value,ci=+$("midCh").value;const upto=ALL.findIndex(c=>c.vi===v&&c.ci===ci)+1;
+    const raw=$("midPage").value;let pages=null,how="";
+    if(raw!==""){const pv=$("midPVol").value,vi=pv.startsWith("29")?29:+pv;let base=0;for(let i=0;i<vi;i++)base+=VOL_PAGES[i];
+      if(pv==="29d")base+=VOL30_UP;const cap=pv==="29u"?VOL30_UP:pv==="29d"?VOL_PAGES[29]-VOL30_UP:VOL_PAGES[vi];
+      pages=base+Math.min(Math.max(0,+raw||0),cap);how="入力したページから計算";}
+    else if(ci===VOLS[v].length-1){let base=0;for(let i=0;i<=v;i++)base+=VOL_PAGES[i];pages=base;how="巻の最後まで読んだとして計算";}
+    return {upto,pages,how};};
+  const prev=()=>{const r=calc(),c=ALL[r.upto-1];
+    $("midPrev").innerHTML=`✓ 第1巻「旭日」〜 第${c.vi+1}巻「${c.name}」の <b>${r.upto}章</b>を読了にします（全体の${Math.floor(r.upto/TOTAL*100)}%）<br>`+
+      (r.pages!=null?`📄 ページ：<b>${r.pages.toLocaleString()}</b> / ${TOTAL_PAGES.toLocaleString()}（${(r.pages/TOTAL_PAGES*100).toFixed(1)}%）<span style="color:var(--sub)">　${r.how}</span>`:
+      `📄 ページ：巻の途中までの場合は、②にページを入れると反映されます`)+
+      `<br><span style="color:var(--sub)">「アプリを使う前に読んだ分」として記録し、連続記録やカレンダーには数えません。</span>`;};
+  fillCh();syncPVol();prev();
+  $("midVol").onchange=()=>{fillCh();syncPVol();prev();};
+  $("midCh").onchange=()=>{syncPVol();prev();};
+  $("midPVol").onchange=prev;$("midPage").oninput=prev;
+  $("mCancel").onclick=closeModal;
+  $("mOk").onclick=()=>{
+    const r=calc(),before=snapshot(),c=ALL[r.upto-1];
+    ALL.slice(0,r.upto).forEach(x=>{if(!state.read[x.key])state.read[x.key]="pre";});
+    if(r.pages!=null)state.prePages=r.pages;
+    state.midDone=true;state.end=countRead()===TOTAL?(state.end||today()):null;state.updatedAt=Date.now();
+    undoSnap=before;tab=Math.floor((nextChapter()||c).vi/10);
+    render();queueSave(true);renderMid();closeModal();
+    celebrate("🌸","入力しました！",`第${c.vi+1}巻「${esc(c.name)}」まで、${r.upto}章を読了にしました。<br>ここから一緒に読み進めましょう！`,true,null);
+  };
+}
+function renderMid(){document.getElementById("midNote").style.display=(!state.midDone&&countRead()===0&&!pgSum("0000","9999"))?"":"none";}
+document.getElementById("midOpen").onclick=openMid;
+document.getElementById("bMid").onclick=openMid;
+document.getElementById("midSkip").onclick=()=>{state.midDone=true;state.updatedAt=Date.now();queueSave();renderMid();};
+
 /* ---------- backup ---------- */
 const blobToData=b=>new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(b);});
 function dataToBlob(d){const [h,b64]=d.split(",");const mime=(h.match(/data:(.*?);/)||[])[1]||"image/jpeg";const bin=atob(b64);const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new Blob([u],{type:mime});}
@@ -1002,7 +1066,7 @@ function renderBackupNote(){
   if(due){document.getElementById("bkNow").onclick=()=>document.getElementById("bExport").click();
     document.getElementById("bkLater").onclick=()=>{state.bkSnooze=today();saveLocal();renderBackupNote();};}
 }
-renderBackupNote();
+renderBackupNote();renderMid();
 render();
 photosInit().then(()=>{renderGrid();if(view==="notes")renderNotebook();});
 if(window.claude&&typeof claude.use==="function") initCloud(); else setSync("このブラウザに保存中");
