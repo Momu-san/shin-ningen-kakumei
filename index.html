@@ -607,7 +607,12 @@ function weekCount(){const m=dayCounts();let n=0;const d=new Date();const dow=(d
 function nextChapter(){return ALL.find(c=>!state.read[c.key]);}
 
 /* ---------- messages ---------- */
-const CHEERS=["一章読了！ 今日も前進しました。","いいペースです。この調子で！","読んだ分だけ、心に力が湧いてきますね。","一歩一歩が、大きな道になります。","素晴らしい！ 次の章も楽しみですね。","今日の一章が、明日の力に。","コツコツ続けるあなたが一番の勝利者です。","また一つ、花が咲きました。"];
+const CHEERS=["今日も一歩前進しました！","素晴らしい！ 心に新しい光が灯りましたね。","いいペースです。この調子で！","読んだ分だけ、心に力が湧いてきますね。","コツコツ続けるあなたが一番の勝利者です！","また一つ、心に花が咲きました🌸","今日の一章が、明日の力になります。","よく頑張りました！ 自分をほめてあげてください。","一章一章の積み重ねが、大きな道になります。","最高です！ 次の章も楽しみですね。","続ける力、本当に素晴らしいです！","読書の時間、お疲れさまでした☕"];
+function chapterCheer(c){
+  const left=VOLS[c.vi].filter((_,ci)=>!state.read[(c.vi+1)+"-"+(ci+1)]).length;
+  const tail=left===1?`第${c.vi+1}巻の読了まで、あと1章！`:left>1?`第${c.vi+1}巻はあと${left}章です。`:"";
+  return `🎉「${c.name}」読了おめでとう！ ${CHEERS[Math.floor(Math.random()*CHEERS.length)]}${tail?" "+tail:""}`;
+}
 function heroMsg(n,s){
   if(n===TOTAL) return "🎉 全30巻・122章、完全読了！ 本当におめでとうございます。";
   if(n===0&&s===0) return "最初の一章から始めましょう。読んだら章名をタップ！";
@@ -906,7 +911,7 @@ function toggle(key){
     else if(nowDone&&!volWasDone) celebrate(["🌸","💗","⭐"][Math.floor(c.vi/10)],`第${c.vi+1}巻 読了！`,`「${VOLS[c.vi].join("」「")}」<br>全${VOLS[c.vi].length}章を読み終えました。`,true,key);
     else { const mil=[.25,.5,.75].find(p=>nBefore<Math.ceil(TOTAL*p)&&n>=Math.ceil(TOTAL*p));
       if(mil) celebrate("🎯",`${mil*100}% 突破！`,`${n}章を読了。着実に前進しています！`,false,key);
-      else showToast(`「${c.name}」読了！ ${CHEERS[Math.floor(Math.random()*CHEERS.length)]}`,key); }
+      else {showToast(chapterCheer(c),key);confetti(90);} }
   } else showToast(`「${c.name}」を未読に戻しました`);
 }
 let toastKey=null;
