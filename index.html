@@ -180,6 +180,33 @@ canvas#fx{position:fixed;inset:0;pointer-events:none;z-index:70}
 .viewer img{max-width:100%;max-height:100%;object-fit:contain;touch-action:pinch-zoom}
 .viewer .nav{position:absolute;top:50%;transform:translateY(-50%);border:none;background:rgba(255,255,255,.15);color:#fff;width:44px;height:44px;border-radius:99px;font-size:20px}
 
+/* pages panel */
+.pg-top{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap}
+.pg-big{font-size:40px;font-weight:900;line-height:1}
+.pg-big small{font-size:14px;font-weight:500;color:var(--sub);margin-left:4px}
+.pg-goal{font-size:13px;color:var(--sub);flex:1;min-width:160px}
+.pg-goal .bar{margin:6px 0 0}
+.pg-form{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:14px}
+.pg-form input{font-family:inherit;border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:15px;background:#fff}
+.pg-form input[type=number]{width:90px;text-align:right;font-size:18px;font-weight:700}
+.chip{border:none;background:#f3ece4;border-radius:99px;padding:7px 12px;font-size:13px;font-weight:700;color:var(--ink)}
+.chip:active{transform:scale(.95)}
+.pg-week{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:16px;align-items:end;height:110px}
+.pg-day{border:none;background:none;padding:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:3px;font-size:11px;color:var(--sub)}
+.pg-day .col{width:70%;max-width:34px;background:#f1ebe4;border-radius:6px 6px 3px 3px;min-height:4px;transition:height .4s}
+.pg-day.has .col{background:linear-gradient(180deg,#f08a98,#d7263d)}
+.pg-day.met .col{background:linear-gradient(180deg,#f5c542,#e3a51b)}
+.pg-day .num{font-weight:700;color:var(--ink);font-size:12px}
+.pg-day.sel{color:var(--ink);font-weight:700}
+.pg-day.sel .d{background:var(--ink);color:#fff;border-radius:99px;padding:0 6px}
+.pg-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}
+.pg-stats .stat .v{font-size:18px}
+.seg{display:inline-flex;background:#f3ece4;border-radius:99px;padding:3px;margin-left:auto}
+.seg button{border:none;background:none;border-radius:99px;padding:3px 10px;font-size:12px;font-weight:700;color:var(--sub)}
+.seg button.on{background:#fff;color:var(--ink)}
+.foot input[type=date]{font-family:inherit;border:1px solid var(--line);border-radius:8px;padding:4px 6px;font-size:15px;font-weight:700;background:#fff}
+@media (max-width:720px){.pg-stats{grid-template-columns:repeat(2,1fr)}}
+
 /* in-page camera */
 .cam{position:fixed;inset:0;background:#000;z-index:85;display:none;flex-direction:column}
 .cam.show{display:flex}
@@ -251,15 +278,41 @@ mark{background:#ffe58a;border-radius:3px;padding:0 1px}
     <button class="btn btn-red" id="nextBtn">読了！ ✓</button>
   </section>
 
+  <section class="panel" style="margin-top:14px" id="pgPanel">
+    <h2>📄 読んだページ数</h2>
+    <div class="pg-top">
+      <div><div style="font-size:12px;color:var(--sub)" id="pgSelLbl">今日</div><div class="pg-big" id="pgDayNum">0<small>ページ</small></div></div>
+      <div class="pg-goal" id="pgGoalBox"></div>
+    </div>
+    <div class="pg-form">
+      <input type="date" id="pgDate" aria-label="日付">
+      <input type="number" id="pgIn" min="1" max="999" inputmode="numeric" placeholder="0" aria-label="ページ数"><span style="font-size:14px">ページ</span>
+      <button class="btn btn-red btn-sm" id="pgAdd">＋ 追加</button>
+      <button class="btn btn-ghost btn-sm" id="pgSet">この数に修正</button>
+    </div>
+    <div class="pg-form" style="margin-top:8px">
+      <button class="chip" data-add="5">+5</button><button class="chip" data-add="10">+10</button><button class="chip" data-add="20">+20</button><button class="chip" data-add="30">+30</button>
+    </div>
+    <div class="pg-week" id="pgWeek"></div>
+    <div class="pg-stats">
+      <div class="stat"><div class="k">今週</div><div class="v" id="pgW">0<small>p</small></div></div>
+      <div class="stat"><div class="k">今月</div><div class="v" id="pgM">0<small>p</small></div></div>
+      <div class="stat"><div class="k">累計</div><div class="v" id="pgT">0<small>p</small></div></div>
+      <div class="stat"><div class="k">1日平均（読んだ日）</div><div class="v" id="pgA">0<small>p</small></div></div>
+    </div>
+  </section>
+
   <div class="row2">
     <section class="panel">
-      <h2>📅 読書カレンダー（直近16週）</h2>
+      <h2>📅 読書カレンダー（直近16週）<span class="seg" id="heatSeg"><button data-m="ch" class="on">章</button><button data-m="pg">ページ</button></span></h2>
       <div class="heat" id="heat"></div>
-      <div class="legend">少 <i style="background:#f1ebe4"></i><i style="background:#f9c9cf"></i><i style="background:#f08a98"></i><i style="background:#d7263d"></i> 多</div>
+      <div class="legend" id="heatLegend">少 <i style="background:#f1ebe4"></i><i style="background:#f9c9cf"></i><i style="background:#f08a98"></i><i style="background:#d7263d"></i> 多</div>
     </section>
     <section class="panel goal">
       <h2>🎯 目標ペース</h2>
+      <div class="line"><span>開始日</span><input type="date" id="startIn"></div>
       <div class="line"><span>目標日</span><input type="date" id="target"></div>
+      <div class="line"><span>1日の目標ページ</span><span><input type="number" id="pgGoalIn" min="1" max="999" inputmode="numeric" placeholder="未設定" style="width:72px;font-family:inherit;border:1px solid var(--line);border-radius:8px;padding:4px 6px;font-size:13px;text-align:right"> ページ</span></div>
       <div class="line"><span>目標まで</span><b id="gDays">—</b></div>
       <div class="line"><span>残り</span><b id="gLeft">—</b></div>
       <div class="line"><span>必要なペース</span><b id="gPace">—</b></div>
@@ -296,7 +349,7 @@ mark{background:#ffe58a;border-radius:3px;padding:0 1px}
   <section class="foot">
     <div class="c100">創立100周年へ</div>
     <div class="dates">
-      <div>開始　<b id="dStart">—</b></div>
+      <div>開始　<input type="date" id="dStart" aria-label="開始日"></div>
       <div>終了　<b id="dEnd">—</b></div>
     </div>
   </section>
@@ -387,8 +440,8 @@ let _fp; function flowerPath(){ if(_fp) return _fp; // 5-petal flower
   return _fp=p+"Z"; }
 
 /* ---------- state ---------- */
-let state = {read:{}, notes:{}, target:DEFAULT_TARGET, start:null, end:null, bestStreak:0, updatedAt:0};
-function norm(s){return Object.assign({read:{},notes:{},target:DEFAULT_TARGET,start:null,end:null,bestStreak:0},s||{});}
+let state = {read:{}, notes:{}, pages:{}, pageGoal:null, target:DEFAULT_TARGET, start:null, end:null, bestStreak:0, updatedAt:0};
+function norm(s){return Object.assign({read:{},notes:{},pages:{},pageGoal:null,target:DEFAULT_TARGET,start:null,end:null,bestStreak:0},s||{});}
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const byKey=k=>ALL.find(c=>c.key===k);
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
@@ -476,13 +529,15 @@ function countRead(){return ALL.filter(c=>state.read[c.key]).length;}
 function volDone(vi){return VOLS[vi].every((_,ci)=>state.read[(vi+1)+"-"+(ci+1)]);}
 function volCount(vi){return VOLS[vi].filter((_,ci)=>state.read[(vi+1)+"-"+(ci+1)]).length;}
 function dayCounts(){const m={};Object.values(state.read).forEach(d=>{if(d)m[d]=(m[d]||0)+1;});return m;}
+function activeDays(){const m=dayCounts();Object.entries(state.pages||{}).forEach(([d,v])=>{if(v>0)m[d]=(m[d]||0)+1;});return m;}
+function pgSum(from,to){let n=0;Object.entries(state.pages||{}).forEach(([d,v])=>{if(d>=from&&d<=to)n+=v;});return n;}
 function streak(){
-  const m=dayCounts();let d=new Date();
+  const m=activeDays();let d=new Date();
   if(!m[today(d)]){d.setDate(d.getDate()-1);if(!m[today(d)])return 0;}
   let n=0;while(m[today(d)]){n++;d.setDate(d.getDate()-1);}return n;
 }
 function bestStreak(){
-  const days=Object.keys(dayCounts()).sort();let best=0,cur=0,prev=null;
+  const days=Object.keys(activeDays()).sort();let best=0,cur=0,prev=null;
   days.forEach(s=>{cur=(prev&&diffDays(prev,s)===1)?cur+1:1;best=Math.max(best,cur);prev=s;});return best;
 }
 function weekCount(){const m=dayCounts();let n=0;const d=new Date();const dow=(d.getDay()+6)%7;
@@ -493,7 +548,7 @@ function nextChapter(){return ALL.find(c=>!state.read[c.key]);}
 const CHEERS=["一章読了！ 今日も前進しました。","いいペースです。この調子で！","読んだ分だけ、心に力が湧いてきますね。","一歩一歩が、大きな道になります。","素晴らしい！ 次の章も楽しみですね。","今日の一章が、明日の力に。","コツコツ続けるあなたが一番の勝利者です。","また一つ、花が咲きました。"];
 function heroMsg(n,s){
   if(n===TOTAL) return "🎉 全30巻・122章、完全読了！ 本当におめでとうございます。";
-  if(n===0) return "最初の一章から始めましょう。読んだら章名をタップ！";
+  if(n===0&&s===0) return "最初の一章から始めましょう。読んだら章名をタップ！";
   const pct=n/TOTAL*100;
   let m = s>=7?`${s}日連続で読書中！ 素晴らしい継続力です。`: s>=2?`${s}日連続！ 明日も一章、読み進めましょう。`: s===1?"今日も読めました！ 明日もつなげて連続記録を伸ばそう。":"今日の一章で、また連続記録をスタートしよう。";
   if(pct>=75) m+=" ゴールはもうすぐそこです。";
@@ -510,6 +565,9 @@ function badgeList(){
     {e:"📖",t:"10章読了",ok:n>=10},
     {e:"🌸",t:"第1巻読了",ok:volDone(0)},
     {e:"📝",t:"はじめてのメモ",ok:Object.keys(state.notes||{}).length>0},
+    {e:"📄",t:"累計100ページ",ok:pgSum("0000","9999")>=100},
+    {e:"📚",t:"累計1000ページ",ok:pgSum("0000","9999")>=1000},
+    {e:"✨",t:"1日の目標ページ達成",ok:!!state.pageGoal&&Object.values(state.pages||{}).some(v=>v>=state.pageGoal)},
     {e:"🔥",t:"3日連続",ok:best>=3},
     {e:"⚡",t:"7日連続",ok:best>=7},
     {e:"🌟",t:"30日連続",ok:best>=30},
@@ -540,17 +598,71 @@ function render(){
   else box.style.display="none";
 
   renderHeat(); renderGoal(n); renderBadges(); renderTabs(); renderGrid();
-  document.getElementById("dStart").textContent=fmtJ(state.start);
+  document.getElementById("dStart").value=state.start||"";
+  document.getElementById("startIn").value=state.start||"";
+  document.getElementById("pgGoalIn").value=state.pageGoal||"";
+  renderPages();
   document.getElementById("dEnd").textContent=fmtJ(state.end);
 }
+let heatMode="ch";
 function renderHeat(){
-  const m=dayCounts(),el=document.getElementById("heat");const t=new Date();
+  const m=heatMode==="ch"?dayCounts():(state.pages||{}),el=document.getElementById("heat");const t=new Date();
+  const g=state.pageGoal||20;
   const dow=(t.getDay()+6)%7; const startOff=7*15+dow; let h="";
   for(let i=startOff;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const k=today(d),c=m[k]||0;
-    const l=c===0?"":c===1?"l1":c===2?"l2":"l3";
-    h+=`<i class="${l}${i===0?' today':''}" title="${fmtJ(k)}：${c}章"></i>`;}
+    const l=heatMode==="ch"?(c===0?"":c===1?"l1":c===2?"l2":"l3"):(c===0?"":c<g/2?"l1":c<g?"l2":"l3");
+    h+=`<i class="${l}${i===0?' today':''}" title="${fmtJ(k)}：${c}${heatMode==="ch"?"章":"ページ"}"></i>`;}
   el.innerHTML=h;
 }
+document.getElementById("heatSeg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;heatMode=b.dataset.m;
+  document.querySelectorAll("#heatSeg button").forEach(x=>x.classList.toggle("on",x===b));renderHeat();});
+
+/* ---------- pages ---------- */
+let pgSel=today();
+function renderPages(){
+  const P=state.pages||{},t=today(),g=state.pageGoal;
+  if(pgSel>t)pgSel=t;
+  document.getElementById("pgDate").value=pgSel;document.getElementById("pgDate").max=t;
+  const v=P[pgSel]||0;
+  document.getElementById("pgSelLbl").textContent=pgSel===t?"今日":fmtJ(pgSel);
+  document.getElementById("pgDayNum").innerHTML=v+"<small>ページ</small>";
+  document.getElementById("pgGoalBox").innerHTML=g?`目標 ${g}ページ　${v>=g?'<b style="color:var(--ok)">達成！ ✨</b>':`あと <b>${g-v}</b> ページ`}<div class="bar"><div style="width:${Math.min(100,v/g*100)}%"></div></div>`:`<span>「目標ペース」欄で1日の目標ページを設定できます</span>`;
+  // last 7 days
+  let h="",max=Math.max(g||0,1);const days=[];
+  for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push(today(d));}
+  days.forEach(k=>max=Math.max(max,P[k]||0));
+  const wd="日月火水木金土";
+  days.forEach(k=>{const n=P[k]||0,d=parse(k);
+    h+=`<button class="pg-day ${n?'has':''} ${g&&n>=g?'met':''} ${k===pgSel?'sel':''}" data-day="${k}"><span class="num">${n||""}</span><span class="col" style="height:${Math.max(4,n/max*70)}px"></span><span class="d">${k===t?"今日":wd[d.getDay()]}</span></button>`;});
+  document.getElementById("pgWeek").innerHTML=h;
+  const now=new Date(),dow=(now.getDay()+6)%7,mon=new Date();mon.setDate(mon.getDate()-dow);
+  const tot=pgSum("0000","9999"),nd=Object.values(P).filter(x=>x>0).length;
+  document.getElementById("pgW").innerHTML=pgSum(today(mon),t)+"<small>p</small>";
+  document.getElementById("pgM").innerHTML=pgSum(t.slice(0,8)+"01",t)+"<small>p</small>";
+  document.getElementById("pgT").innerHTML=tot.toLocaleString()+"<small>p</small>";
+  document.getElementById("pgA").innerHTML=(nd?Math.round(tot/nd):0)+"<small>p</small>";
+}
+function setPages(day,val,mode){
+  const before=snapshot(),P=state.pages=state.pages||{},old=P[day]||0;
+  let nv=mode==="add"?old+val:val; nv=Math.max(0,Math.min(9999,Math.round(nv)));
+  if(nv)P[day]=nv;else delete P[day];
+  if(nv&&!state.start)state.start=day<today()?day:today();
+  state.updatedAt=Date.now();undoSnap=before;render();queueSave();
+  const g=state.pageGoal;
+  if(g&&old<g&&nv>=g){showToast(`🎉 ${day===today()?"今日":fmtJ(day)}の目標 ${g}ページ達成！`);confetti(90);}
+  else showToast(mode==="add"?`${val}ページ追加しました（${day===today()?"今日":fmtJ(day)}：合計${nv}ページ）`:`${day===today()?"今日":fmtJ(day)}を${nv}ページに修正しました`);
+}
+const pgIn=document.getElementById("pgIn");
+document.getElementById("pgAdd").onclick=()=>{const v=+pgIn.value;if(v>0){setPages(pgSel,v,"add");pgIn.value="";}else pgIn.focus();};
+document.getElementById("pgSet").onclick=()=>{if(pgIn.value===""){pgIn.focus();return;}setPages(pgSel,+pgIn.value||0,"set");pgIn.value="";};
+pgIn.addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("pgAdd").click();});
+document.querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>setPages(pgSel,+b.dataset.add,"add"));
+document.getElementById("pgDate").onchange=e=>{if(e.target.value){pgSel=e.target.value;renderPages();}};
+document.getElementById("pgWeek").addEventListener("click",e=>{const b=e.target.closest("[data-day]");if(b){pgSel=b.dataset.day;renderPages();}});
+document.getElementById("pgGoalIn").onchange=e=>{const v=parseInt(e.target.value,10);state.pageGoal=v>0?v:null;state.updatedAt=Date.now();render();queueSave();};
+function setStart(v){state.start=v||null;state.updatedAt=Date.now();render();queueSave();showToast(v?`開始日を${fmtJ(v)}にしました`:"開始日をクリアしました",null,true);}
+document.getElementById("dStart").onchange=e=>setStart(e.target.value);
+document.getElementById("startIn").onchange=e=>setStart(e.target.value);
 function renderGoal(n){
   const tg=state.target||DEFAULT_TARGET; document.getElementById("target").value=tg;
   const t=today(),days=diffDays(t,tg),left=TOTAL-n;
@@ -809,9 +921,9 @@ document.getElementById("bImport").onclick=()=>{
 document.getElementById("fBak").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;
   try{await restore(JSON.parse(await f.text()));closeModal();showToast("復元しました",null,true);}catch(err){showToast("このファイルは読み込めませんでした",null,true);}};
 document.getElementById("bReset").onclick=()=>{
-  openModal(`<div class="big">🔄</div><h3>読了記録をリセットしますか？</h3><p>読了の印・開始日・連続記録が消えます。<br>メモと写真は残るので、2周目にも使えます。</p><div class="acts"><button class="btn btn-ghost" id="mCancel">やめる</button><button class="btn btn-red" id="mOk">リセットする</button></div>`);
+  openModal(`<div class="big">🔄</div><h3>読了記録をリセットしますか？</h3><p>読了の印・ページ数の記録・開始日・連続記録が消えます。<br>メモと写真は残るので、2周目にも使えます。</p><div class="acts"><button class="btn btn-ghost" id="mCancel">やめる</button><button class="btn btn-red" id="mOk">リセットする</button></div>`);
   document.getElementById("mCancel").onclick=closeModal;
-  document.getElementById("mOk").onclick=()=>{state=norm({notes:state.notes,target:state.target});state.updatedAt=Date.now();tab=0;render();queueSave(true);closeModal();};
+  document.getElementById("mOk").onclick=()=>{state=norm({notes:state.notes,target:state.target,pageGoal:state.pageGoal});state.updatedAt=Date.now();tab=0;render();queueSave(true);closeModal();};
 };
 
 /* ---------- confetti ---------- */
