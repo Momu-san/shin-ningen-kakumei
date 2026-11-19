@@ -284,9 +284,10 @@ mark{background:#ffe58a;border-radius:3px;padding:0 1px}
       <div><div style="font-size:12px;color:var(--sub)" id="pgSelLbl">今日</div><div class="pg-big" id="pgDayNum">0<small>ページ</small></div></div>
       <div class="pg-goal" id="pgGoalBox"></div>
     </div>
+    <div id="pgOverall" style="margin-top:14px;background:#faf6f1;border-radius:14px;padding:12px 14px"></div>
     <div class="pg-form">
       <input type="date" id="pgDate" aria-label="日付">
-      <input type="number" id="pgIn" min="1" max="999" inputmode="numeric" placeholder="0" aria-label="ページ数"><span style="font-size:14px">ページ</span>
+      <input type="number" id="pgIn" min="1" inputmode="numeric" placeholder="0" aria-label="ページ数"><span style="font-size:14px">ページ</span>
       <button class="btn btn-red btn-sm" id="pgAdd">＋ 追加</button>
       <button class="btn btn-ghost btn-sm" id="pgSet">この数に修正</button>
     </div>
@@ -297,7 +298,7 @@ mark{background:#ffe58a;border-radius:3px;padding:0 1px}
     <div class="pg-stats">
       <div class="stat"><div class="k">今週</div><div class="v" id="pgW">0<small>p</small></div></div>
       <div class="stat"><div class="k">今月</div><div class="v" id="pgM">0<small>p</small></div></div>
-      <div class="stat"><div class="k">累計</div><div class="v" id="pgT">0<small>p</small></div></div>
+      <div class="stat"><div class="k">記録した累計</div><div class="v" id="pgT">0<small>p</small></div></div>
       <div class="stat"><div class="k">1日平均（読んだ日）</div><div class="v" id="pgA">0<small>p</small></div></div>
     </div>
   </section>
@@ -316,6 +317,7 @@ mark{background:#ffe58a;border-radius:3px;padding:0 1px}
       <div class="line"><span>目標まで</span><b id="gDays">—</b></div>
       <div class="line"><span>残り</span><b id="gLeft">—</b></div>
       <div class="line"><span>必要なペース</span><b id="gPace">—</b></div>
+      <div class="line"><span>ページで見ると</span><b id="gPacePg">—</b></div>
       <div style="font-size:12px;color:var(--sub);margin-top:6px">あなたの進み具合</div>
       <div class="bar"><div id="gMine" style="width:0"></div></div>
       <div style="font-size:12px;color:var(--sub)">今日時点で読んでおきたい目安</div>
@@ -413,6 +415,10 @@ const VOLS = [
  ["常楽","力走","清新","源流"],
  ["大山","雌伏","雄飛","暁鐘","勝ち鬨","誓願"]
 ];
+// 各巻のページ数（第1巻・第30巻下はあとがき含む）。第30巻は上432＋下448
+const VOL_PAGES=[353,336,337,364,355,370,392,372,406,391,400,398,392,387,397,356,416,395,388,396,404,404,374,374,398,422,439,447,454,880];
+const VOL30_UP=432;
+const TOTAL_PAGES=VOL_PAGES.reduce((a,b)=>a+b,0);
 const ALL = []; VOLS.forEach((v,vi)=>v.forEach((c,ci)=>ALL.push({vi,ci,name:c,key:(vi+1)+"-"+(ci+1)})));
 const TOTAL = ALL.length;
 const DEFAULT_TARGET = "2030-11-18";
@@ -641,10 +647,29 @@ function renderPages(){
   document.getElementById("pgM").innerHTML=pgSum(t.slice(0,8)+"01",t)+"<small>p</small>";
   document.getElementById("pgT").innerHTML=tot.toLocaleString()+"<small>p</small>";
   document.getElementById("pgA").innerHTML=(nd?Math.round(tot/nd):0)+"<small>p</small>";
+  renderOverall();
+}
+function pagePosition(n){
+  if(n>=TOTAL_PAGES)return "全巻読了！";
+  let acc=0;
+  for(let i=0;i<VOL_PAGES.length;i++){
+    if(n<acc+VOL_PAGES[i]){const inV=n-acc+1;
+      if(i===29)return inV<=VOL30_UP?`第30巻上の ${inV}ページ目あたり`:`第30巻下の ${inV-VOL30_UP}ページ目あたり`;
+      return `第${i+1}巻の ${inV}ページ目あたり`;}
+    acc+=VOL_PAGES[i];}
+  return "";
+}
+function renderOverall(){
+  const tot=pgSum("0000","9999"),pct=Math.min(100,tot/TOTAL_PAGES*100),left=Math.max(0,TOTAL_PAGES-tot);
+  document.getElementById("pgOverall").innerHTML=`<div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px"><span style="font-size:13px;font-weight:700">全体の進み具合（ページ）</span><span style="font-size:13px"><b style="font-size:18px">${pct.toFixed(1)}%</b>　${tot.toLocaleString()} / ${TOTAL_PAGES.toLocaleString()} ページ</span></div>
+  <div class="bar"><div style="width:${pct}%"></div></div>
+  <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;font-size:12px;color:var(--sub)"><span>📍 ${tot?pagePosition(tot):"第1巻の 1ページ目から"}</span><span>残り ${left.toLocaleString()} ページ</span></div>`;
+  const days=diffDays(today(),state.target||DEFAULT_TARGET);
+  document.getElementById("gPacePg").textContent=left===0?"達成済み 🎉":days>0?`1日 ${Math.ceil(left/days)} ページ`:"—";
 }
 function setPages(day,val,mode){
   const before=snapshot(),P=state.pages=state.pages||{},old=P[day]||0;
-  let nv=mode==="add"?old+val:val; nv=Math.max(0,Math.min(9999,Math.round(nv)));
+  let nv=mode==="add"?old+val:val; nv=Math.max(0,Math.min(TOTAL_PAGES,Math.round(nv)));
   if(nv)P[day]=nv;else delete P[day];
   if(nv&&!state.start)state.start=day<today()?day:today();
   state.updatedAt=Date.now();undoSnap=before;render();queueSave();
