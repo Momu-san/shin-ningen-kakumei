@@ -58,6 +58,7 @@ header p{margin:0;color:var(--sub);font-size:13px}
 .btn-red:active{transform:scale(.97)}
 .btn-ghost{background:#f3ece4;color:var(--ink)}
 .btn-sm{padding:7px 14px;font-size:13px}
+.btn:disabled{opacity:.45;cursor:default}
 
 /* panels */
 .row2{display:grid;grid-template-columns:1.3fr 1fr;gap:14px;margin-top:14px}
@@ -1069,23 +1070,39 @@ function renderAB(){
   if($("abStart"))$("abStart").onclick=abStart;if($("abResume"))$("abResume").onclick=abResume;if($("abStop"))$("abStop").onclick=abStop;
 }
 function downloadBlob(blob,name){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);}
+// 共有画面は「タップした直後」にしか開けない。準備（写真の変換）に時間がかかると無反応になるため、
+// 先に準備を終わらせてから、押されたその場で共有を呼ぶ。
 async function quickBackup(){
-  let blob=AB.cache;
-  if(!blob){blob=await buildBackupBlob();AB.cache=blob;}
-  const base=`新人間革命_読了表_${today()}`;
+  if(AB.cache){doShare();return;}
+  openModal(`<div class="big">💾</div><h3>バックアップを準備中…</h3><p id="bkP">写真が多いと数秒かかります。</p><div class="acts"><button class="btn btn-red" id="mOk" disabled>保存する</button></div>`);
+  try{AB.cache=await buildBackupBlob();}catch(e){}
+  const btn=document.getElementById("mOk"),p=document.getElementById("bkP");
+  if(!btn||!p)return;
+  p.textContent=AB.cache?"準備ができました。「保存する」を押してください。":"準備に失敗しました。もう一度お試しください。";
+  btn.disabled=!AB.cache;btn.onclick=()=>doShare();
+}
+function backupName(){return `新人間革命_読了表_${today()}`;}
+async function doShare(){
+  const blob=AB.cache,base=backupName();let err=null;
+  if(!blob){quickBackup();return;}
   if(isMobile&&navigator.share&&navigator.canShare){
     let file=new File([blob],base+".json",{type:"application/json"});
-    if(!navigator.canShare({files:[file]}))file=new File([blob],base+".txt",{type:"text/plain"});
-    if(navigator.canShare({files:[file]})){
-      try{await navigator.share({files:[file],title:"読了表のバックアップ"});markBackedUp();showToast("バックアップを保存しました",null,true);return;}
-      catch(e){
-        if(e&&e.name==="AbortError")return;
-        if(e&&e.name==="NotAllowedError"){openModal(`<div class="big">💾</div><h3>準備ができました</h3><p>もう一度押すと、保存先を選ぶ画面が開きます。</p><div class="acts"><button class="btn btn-red" id="mOk">保存する</button></div>`);
-          document.getElementById("mOk").onclick=()=>{closeModal();quickBackup();};return;}
-      }
+    try{if(!navigator.canShare({files:[file]}))file=new File([blob],base+".txt",{type:"text/plain"});}catch(e){}
+    let ok=false;try{ok=navigator.canShare({files:[file]});}catch(e){}
+    if(ok){
+      try{await navigator.share({files:[file],title:"読了表のバックアップ"});
+        if(modal.classList.contains("show"))closeModal();markBackedUp();showToast("バックアップを保存しました",null,true);return;}
+      catch(e){if(e&&e.name==="AbortError")return;err=e;}
     }
+    showDownloadLink(blob,base,err);return;
   }
-  downloadBlob(blob,base+".json");markBackedUp();showToast("バックアップファイルを保存しました",null,true);
+  downloadBlob(blob,base+".json");if(modal.classList.contains("show"))closeModal();markBackedUp();showToast("バックアップファイルを保存しました",null,true);
+}
+function showDownloadLink(blob,base,err){
+  const url=URL.createObjectURL(blob);
+  openModal(`<div class="big">💾</div><h3>ファイルとして保存</h3><p>下のボタンを押して保存してください。${err?`<br><span style="font-size:11px">（共有画面を開けませんでした：${esc(err.name||"エラー")}）</span>`:""}</p><div class="acts"><a class="btn btn-red" id="mDl" href="${url}" download="${base}.json" style="text-decoration:none;display:inline-block">ファイルを保存</a><button class="btn btn-ghost" id="mTxt">文字でコピー（写真なし）</button></div>`);
+  document.getElementById("mDl").onclick=()=>{setTimeout(()=>{closeModal();markBackedUp();showToast("バックアップファイルを保存しました",null,true);},300);};
+  document.getElementById("mTxt").onclick=()=>{closeModal();document.getElementById("bExport").click();setTimeout(()=>{const t=document.getElementById("mText");if(t)t.click();},50);};
 }
 
 async function restore(d){
