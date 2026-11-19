@@ -252,6 +252,8 @@ mark{background:#ffe58a;border-radius:3px;padding:0 1px}
     <span class="sync" id="sync">読み込み中…</span>
   </header>
 
+  <div id="bkNote" style="display:none;margin-top:14px;background:#fff8e1;border:1px solid #f3dc94;border-radius:16px;padding:12px 14px;font-size:13px;line-height:1.7"></div>
+
   <section class="hero">
     <div class="ring">
       <svg width="100%" height="100%" viewBox="0 0 150 150">
@@ -767,7 +769,22 @@ document.getElementById("toastMemo").onclick=()=>{document.getElementById("toast
 document.getElementById("toastUndo").onclick=()=>{if(!undoSnap)return;state=JSON.parse(undoSnap);state.updatedAt=Date.now();undoSnap=null;render();queueSave();document.getElementById("toast").classList.remove("show");};
 
 const modal=document.getElementById("modal"),mbox=document.getElementById("modalBox");
-function openModal(html){mbox.innerHTML=html;modal.classList.add("show");}
+/* ---------- back gesture / back button closes the top screen ---------- */
+let navGuard=false;
+function ensureGuard(){if(navGuard)return;try{history.pushState({snkLayer:1},"");navGuard=true;}catch(e){}}
+function topLayer(){
+  if(cam.classList.contains("show"))return "cam";
+  if(viewer.classList.contains("show"))return "viewer";
+  if(modal.classList.contains("show"))return "modal";
+  if(sheet.classList.contains("show"))return "sheet";
+  return null;}
+window.addEventListener("popstate",()=>{
+  navGuard=false;const t=topLayer();
+  if(!t){history.back();return;}
+  if(t==="cam")closeCam();else if(t==="viewer")closeViewer();else if(t==="modal")closeModal();else closeSheet();
+  if(topLayer())ensureGuard();
+});
+function openModal(html){mbox.innerHTML=html;modal.classList.add("show");ensureGuard();}
 function closeModal(){modal.classList.remove("show");}
 modal.addEventListener("click",e=>{if(e.target===modal)closeModal();});
 function celebrate(emoji,title,body,big,lastKey){
@@ -816,7 +833,7 @@ document.getElementById("nbList").addEventListener("click",e=>{const c=e.target.
 /* ---------- chapter sheet ---------- */
 const sheet=document.getElementById("sheet"),sbox=document.getElementById("sheetBox");
 let sheetKey=null,editingId=null,delArm=null;
-function openSheet(k){sheetKey=k;editingId=null;delArm=null;renderSheet();sheet.classList.add("show");}
+function openSheet(k){sheetKey=k;editingId=null;delArm=null;renderSheet();sheet.classList.add("show");ensureGuard();}
 function closeSheet(){const ta=document.getElementById("shText");if(ta&&ta.value.trim())saveNote();
   sheet.classList.remove("show");sheetKey=null;render();if(view==="notes")renderNotebook();}
 sheet.addEventListener("click",e=>{if(e.target===sheet)closeSheet();});
@@ -871,7 +888,7 @@ async function startStream(){
 }
 async function openCam(){
   if(!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)){document.getElementById("fCam").click();return;}
-  camShots=0;updCam();camMsg("カメラを起動しています…");cam.classList.add("show");
+  camShots=0;updCam();camMsg("カメラを起動しています…");cam.classList.add("show");ensureGuard();
   try{await startStream();}
   catch(e){closeCam();
     if(e&&(e.name==="NotAllowedError"||e.name==="SecurityError")) showToast("カメラの使用が許可されていません。ブラウザの設定でカメラを許可してください",null,true);
@@ -895,13 +912,14 @@ document.getElementById("camShut").onclick=async()=>{
 
 /* ---------- photo viewer ---------- */
 const viewer=document.getElementById("viewer");let vKey=null,vIdx=0,vArm=false;
-function openViewer(k,i){vKey=k;vIdx=i;vArm=false;showV();viewer.classList.add("show");}
+function openViewer(k,i){vKey=k;vIdx=i;vArm=false;showV();viewer.classList.add("show");ensureGuard();}
+function closeViewer(){viewer.classList.remove("show");if(sheetKey)renderSheet();}
 function showV(){const ids=PDB.meta[vKey]||[];if(!ids.length){viewer.classList.remove("show");return;}
   vIdx=(vIdx+ids.length)%ids.length;document.getElementById("vImg").src=PDB.urls[ids[vIdx]];
   document.getElementById("vCap").textContent=`${byKey(vKey).name}　${vIdx+1} / ${ids.length}`;
   document.getElementById("vDel").textContent=vArm?"もう一度押すと削除":"削除";
   ["vPrev","vNext"].forEach(id=>document.getElementById(id).style.display=ids.length>1?"":"none");}
-document.getElementById("vClose").onclick=()=>{viewer.classList.remove("show");if(sheetKey)renderSheet();};
+document.getElementById("vClose").onclick=closeViewer;
 document.getElementById("vPrev").onclick=()=>{vIdx--;vArm=false;showV();};
 document.getElementById("vNext").onclick=()=>{vIdx++;vArm=false;showV();};
 document.getElementById("vDel").onclick=async()=>{if(!vArm){vArm=true;showV();return;}vArm=false;
@@ -923,6 +941,7 @@ document.getElementById("bExport").onclick=()=>{
     const photos=[];if(PDB.db){const all=await idbReq(idbTx("readonly").getAll());for(const p of all)photos.push({id:p.id,key:p.key,created:p.created,data:await blobToData(p.blob)});}
     const blob=new Blob([JSON.stringify({app:"shin-ningen-kakumei",version:2,state,photos})],{type:"application/json"});
     const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`新人間革命_読了表_${today()}.json`;document.body.appendChild(a);a.click();a.remove();
+    state.lastBackup=today();state.updatedAt=Date.now();queueSave();renderBackupNote();
     closeModal();showToast("バックアップファイルを保存しました",null,true);};
   document.getElementById("mText").onclick=async()=>{const txt=JSON.stringify({app:"shin-ningen-kakumei",version:2,state});let ok=false;try{await navigator.clipboard.writeText(txt);ok=true;}catch(e){}
     openModal(`<h3>バックアップ（文字）</h3><p>${ok?"クリップボードにコピーしました。":"下の文字列をすべて選択してコピーしてください。"}</p><textarea readonly>${esc(txt)}</textarea><div class="acts"><button class="btn btn-red" id="mOk">閉じる</button></div>`);
@@ -971,6 +990,17 @@ function loop(){
 /* ---------- boot ---------- */
 const local=loadLocal(); if(local&&local.read) state=norm(local);
 const nx0=nextChapter(); if(nx0) tab=Math.floor(nx0.vi/10);
+try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();}catch(e){}
+function renderBackupNote(){
+  const el=document.getElementById("bkNote");if(!el)return;
+  const has=Object.keys(state.read).length||Object.keys(state.notes||{}).length||Object.keys(state.pages||{}).length;
+  const due=has&&!window.claude&&(!state.lastBackup||diffDays(state.lastBackup,today())>=14)&&state.bkSnooze!==today();
+  el.style.display=due?"":"none";
+  if(due)el.innerHTML=`💾 ${state.lastBackup?`最後のバックアップから${diffDays(state.lastBackup,today())}日たちました。`:"まだバックアップがありません。"}記録を守るために保存しておきましょう。<span style="display:flex;gap:6px;margin-top:8px"><button class="btn btn-red btn-sm" id="bkNow">今すぐ保存</button><button class="btn btn-ghost btn-sm" id="bkLater">あとで</button></span>`;
+  if(due){document.getElementById("bkNow").onclick=()=>document.getElementById("bExport").click();
+    document.getElementById("bkLater").onclick=()=>{state.bkSnooze=today();saveLocal();renderBackupNote();};}
+}
+renderBackupNote();
 render();
 photosInit().then(()=>{renderGrid();if(view==="notes")renderNotebook();});
 if(window.claude&&typeof claude.use==="function") initCloud(); else setSync("このブラウザに保存中");
