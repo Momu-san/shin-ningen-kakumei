@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>読了表 小説 新・人間革命</title>
+<meta name="theme-color" content="#d7263d">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="新・人間革命">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fbf7f2; --card:#ffffff; --ink:#2b2522; --sub:#7a6f68; --line:#ece3d9;
+  --red:#d7263d; --red-soft:#fde8eb;
+  --flower:#e86a9a; --flower-soft:#fde4ee;
+  --heart:#e2574c; --heart-soft:#fde6e3;
+  --star:#e3a51b; --star-soft:#fdf2d6;
+  --navy:#2b3a8f; --ok:#3a9d6a;
+  --shadow:0 2px 10px rgba(90,60,40,.07);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Zen Maru Gothic",system-ui,sans-serif;-webkit-tap-highlight-color:transparent}
+button{font-family:inherit;cursor:pointer}
+.wrap{max-width:1080px;margin:0 auto;padding:20px 16px 80px}
+header{text-align:center;padding:8px 0 4px}
+header .deco{font-size:20px;letter-spacing:6px;opacity:.85}
+h1{margin:4px 0 2px;font-weight:900;color:var(--red);font-size:clamp(24px,5vw,36px);letter-spacing:.04em}
+header p{margin:0;color:var(--sub);font-size:13px}
+.sync{display:inline-block;margin-top:6px;font-size:11px;color:var(--sub);background:#f3ece4;border-radius:99px;padding:2px 10px}
+
+/* hero */
+.hero{display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:center;background:var(--card);border-radius:22px;padding:20px;box-shadow:var(--shadow);margin-top:16px}
+.ring{position:relative;width:150px;height:150px}
+.ring svg{transform:rotate(-90deg)}
+.ring .center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring .pct{font-size:34px;font-weight:900;line-height:1}
+.ring .pct small{font-size:16px}
+.ring .cnt{font-size:12px;color:var(--sub);margin-top:4px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+.stat{background:#faf6f1;border-radius:14px;padding:10px 12px}
+.stat .k{font-size:11px;color:var(--sub)}
+.stat .v{font-size:22px;font-weight:900;margin-top:2px}
+.stat .v small{font-size:12px;font-weight:500;color:var(--sub);margin-left:2px}
+.stat.fire .v{color:#e2574c}
+.msg{grid-column:1/-1;font-size:14px;background:var(--red-soft);color:#8f1d2c;border-radius:12px;padding:10px 14px;line-height:1.6}
+
+/* next */
+.next{margin-top:14px;background:linear-gradient(135deg,#fff 0%,#fff6f0 100%);border:2px solid #f7d9cf;border-radius:20px;padding:16px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;box-shadow:var(--shadow)}
+.next .lbl{font-size:12px;color:var(--sub)}
+.next .title{font-size:22px;font-weight:900}
+.next .title span{font-size:14px;color:var(--sub);font-weight:500;margin-right:8px}
+.next .grow{flex:1;min-width:180px}
+.btn{border:none;border-radius:99px;padding:12px 22px;font-weight:700;font-size:15px}
+.btn-red{background:var(--red);color:#fff;box-shadow:0 4px 12px rgba(215,38,61,.3)}
+.btn-red:active{transform:scale(.97)}
+.btn-ghost{background:#f3ece4;color:var(--ink)}
+.btn-sm{padding:7px 14px;font-size:13px}
+
+/* panels */
+.row2{display:grid;grid-template-columns:1.3fr 1fr;gap:14px;margin-top:14px}
+.panel{background:var(--card);border-radius:20px;padding:16px 18px;box-shadow:var(--shadow)}
+.panel h2{font-size:15px;margin:0 0 10px;display:flex;align-items:center;gap:6px}
+.heat{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,1fr);gap:3px;justify-content:start}
+.heat i{display:block;width:13px;height:13px;border-radius:3px;background:#f1ebe4}
+.heat i.l1{background:#f9c9cf}.heat i.l2{background:#f08a98}.heat i.l3{background:#d7263d}
+.heat i.today{outline:2px solid var(--ink);outline-offset:-1px}
+.legend{display:flex;gap:4px;align-items:center;font-size:11px;color:var(--sub);margin-top:8px}
+.legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+.goal .line{display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px dashed var(--line)}
+.goal .line:last-child{border:none}
+.goal b{font-size:15px}
+.goal input[type=date]{font-family:inherit;border:1px solid var(--line);border-radius:8px;padding:4px 6px;font-size:13px;background:#fff}
+.bar{height:10px;background:#f1ebe4;border-radius:99px;overflow:hidden;margin:8px 0 4px}
+.bar>div{height:100%;background:linear-gradient(90deg,#f08a98,var(--red));border-radius:99px;transition:width .5s}
+.bar.pace>div{background:#c9bdb2}
+
+/* tabs */
+.tabs{display:flex;gap:8px;margin:22px 0 12px;flex-wrap:wrap}
+.tab{border:none;background:#f3ece4;border-radius:99px;padding:8px 16px;font-size:14px;font-weight:700;color:var(--sub)}
+.tab.on{background:var(--ink);color:#fff}
+.tab .tp{font-weight:500;font-size:12px;margin-left:4px;opacity:.8}
+
+/* volumes */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+.vol{background:var(--card);border-radius:18px;padding:14px 14px 12px;box-shadow:var(--shadow);position:relative;overflow:hidden;border:2px solid transparent;transition:border-color .3s}
+.vol.done{border-color:var(--tone)}
+.vol .vh{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px}
+.vol .vn{font-weight:900;font-size:17px}
+.vol .vp{font-size:12px;color:var(--sub)}
+.vol .mini{height:5px;background:#f1ebe4;border-radius:99px;overflow:hidden;margin-bottom:10px}
+.vol .mini>div{height:100%;background:var(--tone);transition:width .4s}
+.ch{display:flex;align-items:center;gap:8px;width:100%;border:none;background:none;padding:6px 4px;border-radius:10px;text-align:left;font-size:16px;color:var(--ink);transition:background .15s}
+.ch:hover{background:#faf6f1}
+.ch svg{flex:none;width:26px;height:26px;transition:transform .25s}
+.ch .nm{flex:1}
+.ch .dt{font-size:10px;color:var(--sub)}
+.ch.read .nm{color:var(--sub)}
+.ch.read svg{transform:scale(1.08)}
+.ch.pop svg{animation:pop .45s}
+@keyframes pop{0%{transform:scale(.6)}60%{transform:scale(1.35)}100%{transform:scale(1.08)}}
+.stamp{position:absolute;right:-6px;top:6px;transform:rotate(12deg);border:3px solid var(--tone);color:var(--tone);font-weight:900;font-size:13px;padding:2px 8px;border-radius:8px;background:rgba(255,255,255,.9);opacity:0;pointer-events:none}
+.vol.done .stamp{opacity:1;animation:stamp .5s}
+@keyframes stamp{0%{transform:rotate(12deg) scale(2.2);opacity:0}100%{transform:rotate(12deg) scale(1);opacity:1}}
+
+/* badges */
+.badges{display:flex;flex-wrap:wrap;gap:8px}
+.badge{display:flex;align-items:center;gap:6px;background:#faf6f1;border-radius:99px;padding:6px 12px;font-size:12px;color:#b6aba2}
+.badge.got{background:#fff3d6;color:#7a5600;font-weight:700}
+.badge .e{font-size:16px;filter:grayscale(1);opacity:.5}
+.badge.got .e{filter:none;opacity:1}
+
+/* footer */
+.foot{margin-top:22px;background:var(--card);border-radius:20px;padding:16px 18px;box-shadow:var(--shadow);display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between}
+.foot .c100{color:var(--navy);font-weight:900;font-size:22px}
+.foot .dates{font-size:14px;display:flex;gap:18px;flex-wrap:wrap}
+.foot .dates b{font-size:16px}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;justify-content:center}
+
+/* toast & modal */
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(120px);background:var(--ink);color:#fff;padding:12px 16px 12px 18px;border-radius:16px;font-size:14px;display:flex;gap:12px;align-items:center;transition:transform .35s cubic-bezier(.2,1.2,.4,1);z-index:90;max-width:92vw;box-shadow:0 8px 24px rgba(0,0,0,.2)}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast button{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:99px;padding:5px 12px;font-size:12px;white-space:nowrap}
+.modal{position:fixed;inset:0;background:rgba(40,30,25,.45);display:none;align-items:center;justify-content:center;z-index:60;padding:16px}
+.modal.show{display:flex}
+.modal .box{background:#fff;border-radius:22px;padding:22px;max-width:440px;width:100%;text-align:center}
+.modal .big{font-size:56px;line-height:1}
+.modal h3{margin:10px 0 6px;font-size:22px;color:var(--red)}
+.modal p{color:var(--sub);font-size:14px;line-height:1.7;margin:0 0 16px}
+.modal textarea{width:100%;height:120px;font-size:11px;font-family:monospace;border:1px solid var(--line);border-radius:10px;padding:8px;margin-bottom:12px}
+.modal .acts{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+canvas#fx{position:fixed;inset:0;pointer-events:none;z-index:70}
+
+/* chapter row with memo button */
+.chr{display:flex;align-items:center;gap:2px}
+.chr .ch{flex:1;min-width:0}
+.memo{flex:none;border:none;background:none;width:34px;height:34px;border-radius:10px;font-size:15px;color:#c9bdb2;display:flex;align-items:center;justify-content:center;position:relative}
+.memo:hover{background:#faf6f1;color:var(--ink)}
+.memo.has{color:var(--ink)}
+.memo .n{position:absolute;top:2px;right:1px;background:var(--red);color:#fff;font-size:9px;font-weight:700;border-radius:99px;min-width:14px;height:14px;line-height:14px;padding:0 3px}
+
+/* view switch */
+.views{display:flex;background:#efe7de;border-radius:99px;padding:4px;margin:24px auto 0;width:max-content;max-width:100%}
+.views button{border:none;background:none;border-radius:99px;padding:9px 20px;font-size:15px;font-weight:700;color:var(--sub)}
+.views button.on{background:#fff;color:var(--ink);box-shadow:0 2px 6px rgba(0,0,0,.08)}
+
+/* sheet */
+.sheet .box{text-align:left;max-width:560px;max-height:90vh;overflow:auto;padding:20px}
+.sh-head{display:flex;align-items:flex-start;gap:10px;margin-bottom:12px}
+.sh-head .vlabel{font-size:12px;color:var(--sub)}
+.sh-head .ttl{font-size:24px;font-weight:900}
+.sh-head .x{margin-left:auto;border:none;background:#f3ece4;border-radius:99px;width:34px;height:34px;font-size:16px;flex:none}
+.readrow{display:flex;align-items:center;gap:10px;background:#faf6f1;border-radius:12px;padding:8px 12px;font-size:14px;margin-bottom:16px}
+.readrow input[type=date]{font-family:inherit;border:1px solid var(--line);border-radius:8px;padding:3px 6px;font-size:13px}
+.readrow .sp{flex:1}
+.readrow svg{width:26px;height:26px;flex:none}
+#modal{z-index:65}
+.sec{font-size:14px;font-weight:700;margin:14px 0 8px;display:flex;align-items:center;gap:6px}
+.sheet textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-family:inherit;font-size:15px;line-height:1.7;resize:vertical;margin:0}
+.sheet textarea:focus{outline:2px solid #f3b3bd;border-color:transparent}
+.note{background:#fffaf3;border-left:4px solid var(--tone,#e86a9a);border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:15px;line-height:1.8;white-space:pre-wrap;position:relative}
+.note .meta{display:flex;gap:10px;font-size:11px;color:var(--sub);margin-top:4px;white-space:normal}
+.note .meta button{border:none;background:none;color:var(--sub);font-size:11px;padding:0;text-decoration:underline}
+.addrow{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+.photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
+.photos .ph{position:relative;aspect-ratio:3/4;border-radius:10px;overflow:hidden;background:#f1ebe4;border:none;padding:0}
+.photos .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.photos .add{aspect-ratio:3/4;border:2px dashed #dccfc2;border-radius:10px;background:#fff;color:var(--sub);font-size:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.photos .add b{font-size:24px}
+.hint{font-size:11px;color:var(--sub);margin-top:6px}
+
+/* viewer */
+.viewer{position:fixed;inset:0;background:rgba(15,10,8,.94);z-index:80;display:none;flex-direction:column}
+.viewer.show{display:flex}
+.viewer .vbar{display:flex;gap:8px;padding:12px;justify-content:space-between;align-items:center;color:#fff;font-size:13px}
+.viewer .vbar button{border:none;background:rgba(255,255,255,.15);color:#fff;border-radius:99px;padding:8px 14px;font-size:13px}
+.viewer .vimg{flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;padding:0 8px 16px}
+.viewer img{max-width:100%;max-height:100%;object-fit:contain;touch-action:pinch-zoom}
+.viewer .nav{position:absolute;top:50%;transform:translateY(-50%);border:none;background:rgba(255,255,255,.15);color:#fff;width:44px;height:44px;border-radius:99px;font-size:20px}
+
+/* notebook view */
+.nb-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:16px 0 12px}
+.nb-tools input{flex:1;min-width:180px;border:1px solid var(--line);border-radius:99px;padding:9px 16px;font-family:inherit;font-size:14px;background:#fff}
+.nb-ch{background:var(--card);border-radius:18px;padding:14px 16px;box-shadow:var(--shadow);margin-bottom:12px;cursor:pointer}
+.nb-ch .h{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
+.nb-ch .h b{font-size:18px}
+.nb-ch .h span{font-size:12px;color:var(--sub)}
+.nb-ch .thumbs{display:flex;gap:6px;overflow-x:auto;margin-top:6px}
+.nb-ch .thumbs img{height:84px;border-radius:8px;flex:none}
+.empty{text-align:center;color:var(--sub);padding:40px 16px;font-size:14px;line-height:1.8;background:var(--card);border-radius:18px}
+mark{background:#ffe58a;border-radius:3px;padding:0 1px}
+
+@media (max-width:720px){
+  .hero{grid-template-columns:1fr;justify-items:center;text-align:center}
+  .stats{width:100%}
+  .row2{grid-template-columns:1fr}
+  .ring{width:130px;height:130px}
+}
+</style>
+</head>
+<body>
+<canvas id="fx"></canvas>
+<div class="wrap">
+  <header>
+    <div class="deco">🌸 🌼 🌷</div>
+    <h1>読了表　小説 新・人間革命</h1>
+    <p>全30巻・122章　一章ずつ、楽しく読み進めよう</p>
+    <span class="sync" id="sync">読み込み中…</span>
+  </header>
+
+  <section class="hero">
+    <div class="ring">
+      <svg width="100%" height="100%" viewBox="0 0 150 150">
+        <circle cx="75" cy="75" r="64" fill="none" stroke="#f1ebe4" stroke-width="14"/>
+        <circle id="ringArc" cx="75" cy="75" r="64" fill="none" stroke="url(#g)" stroke-width="14" stroke-linecap="round" stroke-dasharray="402.1" stroke-dashoffset="402.1" style="transition:stroke-dashoffset .8s"/>
+        <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f08a98"/><stop offset="1" stop-color="#d7263d"/></linearGradient></defs>
+      </svg>
+      <div class="center"><div class="pct" id="pct">0<small>%</small></div><div class="cnt" id="cnt">0 / 122 章</div></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="k">読了した巻</div><div class="v" id="sVols">0<small>/ 30巻</small></div></div>
+      <div class="stat fire"><div class="k">🔥 連続読書</div><div class="v" id="sStreak">0<small>日</small></div></div>
+      <div class="stat"><div class="k">今週読んだ章</div><div class="v" id="sWeek">0<small>章</small></div></div>
+      <div class="stat"><div class="k">最長連続記録</div><div class="v" id="sBest">0<small>日</small></div></div>
+      <div class="msg" id="msg">最初の一章から始めましょう。</div>
+    </div>
+  </section>
+
+  <section class="next" id="nextBox">
+    <div class="grow">
+      <div class="lbl">次に読む章</div>
+      <div class="title" id="nextTitle"><span>第1巻</span>旭日</div>
+    </div>
+    <button class="btn btn-red" id="nextBtn">読了！ ✓</button>
+  </section>
+
+  <div class="row2">
+    <section class="panel">
+      <h2>📅 読書カレンダー（直近16週）</h2>
+      <div class="heat" id="heat"></div>
+      <div class="legend">少 <i style="background:#f1ebe4"></i><i style="background:#f9c9cf"></i><i style="background:#f08a98"></i><i style="background:#d7263d"></i> 多</div>
+    </section>
+    <section class="panel goal">
+      <h2>🎯 目標ペース</h2>
+      <div class="line"><span>目標日</span><input type="date" id="target"></div>
+      <div class="line"><span>目標まで</span><b id="gDays">—</b></div>
+      <div class="line"><span>残り</span><b id="gLeft">—</b></div>
+      <div class="line"><span>必要なペース</span><b id="gPace">—</b></div>
+      <div style="font-size:12px;color:var(--sub);margin-top:6px">あなたの進み具合</div>
+      <div class="bar"><div id="gMine" style="width:0"></div></div>
+      <div style="font-size:12px;color:var(--sub)">今日時点で読んでおきたい目安</div>
+      <div class="bar pace"><div id="gIdeal" style="width:0"></div></div>
+      <div id="gNote" style="font-size:12px;margin-top:6px"></div>
+    </section>
+  </div>
+
+  <section class="panel" style="margin-top:14px">
+    <h2>🏅 バッジ</h2>
+    <div class="badges" id="badges"></div>
+  </section>
+
+  <div class="views" id="views">
+    <button data-v="table" class="on">📚 読了表</button>
+    <button data-v="notes">📝 メモ帳</button>
+  </div>
+
+  <div id="vTable">
+    <div class="tabs" id="tabs"></div>
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <div id="vNotes" style="display:none">
+    <div class="nb-tools">
+      <input id="nbSearch" type="search" placeholder="メモを検索（例：師弟、勇気）">
+    </div>
+    <div id="nbList"></div>
+  </div>
+
+  <section class="foot">
+    <div class="c100">創立100周年へ</div>
+    <div class="dates">
+      <div>開始　<b id="dStart">—</b></div>
+      <div>終了　<b id="dEnd">—</b></div>
+    </div>
+  </section>
+  <div class="tools">
+    <button class="btn btn-ghost btn-sm" id="bExport">バックアップを保存</button>
+    <button class="btn btn-ghost btn-sm" id="bImport">バックアップから復元</button>
+    <button class="btn btn-ghost btn-sm" id="bReset">読了記録をリセット</button>
+  </div>
+  <p style="text-align:center;font-size:11px;color:var(--sub);margin-top:14px;line-height:1.7">記録・メモ・写真は、このスマホ／パソコンのブラウザ内に保存されます。<br>機種変更の前などは「バックアップを保存」でファイルに残してください。</p>
+</div>
+
+<div class="toast" id="toast"><span id="toastMsg"></span><button id="toastMemo" style="display:none">📝 メモ</button><button id="toastUndo">元に戻す</button></div>
+<div class="modal" id="modal"><div class="box" id="modalBox"></div></div>
+<div class="modal sheet" id="sheet"><div class="box" id="sheetBox"></div></div>
+<div class="viewer" id="viewer">
+  <div class="vbar"><span id="vCap"></span><span style="display:flex;gap:8px"><button id="vDel">削除</button><button id="vClose">閉じる ✕</button></span></div>
+  <div class="vimg"><img id="vImg" alt=""></div>
+  <button class="nav" id="vPrev" style="left:10px">‹</button>
+  <button class="nav" id="vNext" style="right:10px">›</button>
+</div>
+<input type="file" id="fCam" accept="image/*" capture="environment" hidden>
+<input type="file" id="fLib" accept="image/*" multiple hidden>
+<input type="file" id="fBak" accept=".json,application/json" hidden>
+
+<script>
+const VOLS = [
+ ["旭日","新世界","錦秋","慈光","開拓者"],
+ ["先駆","錬磨","勇舞","民衆の旗"],
+ ["仏法西還","月氏","仏陀","平和の光"],
+ ["春嵐","凱旋","青葉","立正安国","大光"],
+ ["開道","歓喜","勝利","獅子"],
+ ["宝土","遠路","加速","波浪","若鷲"],
+ ["文化の華","萌芽","早春","操舵"],
+ ["布陣","宝剣","清流","激流"],
+ ["新時代","鳳雛","光彩","衆望"],
+ ["言論城","幸風","新航路","桂冠"],
+ ["暁光","開墾","常勝","躍進"],
+ ["新緑","愛郷","天舞","栄光"],
+ ["金の橋","北斗","光城","楽土"],
+ ["智勇","使命","烈風","大河"],
+ ["蘇生","創価大学","開花"],
+ ["入魂","対話","羽ばたき"],
+ ["本陣","希望","民衆城","緑野"],
+ ["師子吼","師恩","前進","飛躍"],
+ ["虹の舞","凱歌","陽光","宝塔"],
+ ["友誼の道","懸け橋","信義の絆"],
+ ["SGI","人間外交","共鳴音","宝冠"],
+ ["新世紀","潮流","波濤","命宝"],
+ ["未来","学光","勇気","敢闘"],
+ ["母の詩","厳護","人間教育","灯台"],
+ ["福光","共戦","薫風","人材城"],
+ ["厚田","法旗","勇将","奮迅"],
+ ["若芽","正義","激闘","求道"],
+ ["広宣譜","大道","革心","勝利島"],
+ ["常楽","力走","清新","源流"],
+ ["大山","雌伏","雄飛","暁鐘","勝ち鬨","誓願"]
+];
+const ALL = []; VOLS.forEach((v,vi)=>v.forEach((c,ci)=>ALL.push({vi,ci,name:c,key:(vi+1)+"-"+(ci+1)})));
+const TOTAL = ALL.length;
+const DEFAULT_TARGET = "2030-11-18";
+const LS = "shinNingenKakumei.v1";
+
+const TONES = [
+  {fill:"var(--flower)", soft:"var(--flower-soft)", tone:"#e86a9a", shape:"flower"},
+  {fill:"var(--heart)", soft:"var(--heart-soft)", tone:"#e2574c", shape:"heart"},
+  {fill:"var(--star)", soft:"var(--star-soft)", tone:"#e3a51b", shape:"star"}
+];
+const SHAPES = {
+  flower:'M16 4.5c2.6 0 4.3 2.3 4 4.6 2.1-1.2 4.9-.6 5.8 1.9.9 2.4-.7 4.6-3 5.1 1.8 1.6 2.2 4.4.3 6.2-1.8 1.7-4.6 1.2-5.8-.8-.6 2.3-2.9 3.9-5.4 3.1-2.4-.8-3.1-3.6-2-5.6-2.3.3-4.5-1.2-4.5-3.8 0-2.5 2.3-4 4.6-3.6-1-2.1-.1-4.8 2.4-5.4.8-.2 1.6-.1 2.3.2.3-1 1.6-1.9 1.3-1.9z',
+  heart:'M16 27.5S4 20.2 4 11.8C4 8 6.9 5.2 10.3 5.2c2.4 0 4.5 1.4 5.7 3.4 1.2-2 3.3-3.4 5.7-3.4C25.1 5.2 28 8 28 11.8c0 8.4-12 15.7-12 15.7z',
+  star:'M16 3.5l3.7 7.9 8.6 1.1-6.3 6 1.6 8.6L16 23l-7.6 4.1 1.6-8.6-6.3-6 8.6-1.1z'
+};
+function icon(tierIdx, read){
+  const t = TONES[tierIdx];
+  const d = t.shape==="flower" ? flowerPath() : SHAPES[t.shape];
+  return `<svg viewBox="0 0 32 32"><path d="${d}" fill="${read?t.fill:'#fff'}" stroke="${read?t.fill:'#3a332f'}" stroke-width="1.6" stroke-linejoin="round"/>${read?'<path d="M11 16.5l3.4 3.4L21.5 12.8" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>':''}</svg>`;
+}
+let _fp; function flowerPath(){ if(_fp) return _fp; // 5-petal flower
+  const cx=16,cy=17,rv=5.6,ar=4.9; const pt=i=>{const a=(-90-36+i*72)*Math.PI/180;return [(cx+rv*Math.cos(a)).toFixed(2),(cy+rv*Math.sin(a)).toFixed(2)];};
+  let p=`M${pt(0).join(" ")}`;
+  for(let i=1;i<=5;i++){p+=`A${ar} ${ar} 0 1 1 ${pt(i).join(" ")}`;}
+  return _fp=p+"Z"; }
+
+/* ---------- state ---------- */
+let state = {read:{}, notes:{}, target:DEFAULT_TARGET, start:null, end:null, bestStreak:0, updatedAt:0};
+function norm(s){return Object.assign({read:{},notes:{},target:DEFAULT_TARGET,start:null,end:null,bestStreak:0},s||{});}
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const byKey=k=>ALL.find(c=>c.key===k);
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+
+/* ---------- photos (IndexedDB, this device) ---------- */
+const PDB={db:null,meta:{},urls:{}};
+function idbOpen(){return new Promise(res=>{try{const r=indexedDB.open("snk-photos",1);
+  r.onupgradeneeded=()=>{const s=r.result.createObjectStore("photos",{keyPath:"id"});s.createIndex("key","key");};
+  r.onsuccess=()=>res(r.result);r.onerror=()=>res(null);}catch(e){res(null);}});}
+function idbTx(mode){return PDB.db.transaction("photos",mode).objectStore("photos");}
+function idbReq(r){return new Promise((res,rej)=>{r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+async function photosInit(){
+  PDB.db=await idbOpen(); if(!PDB.db) return;
+  const all=await idbReq(idbTx("readonly").getAll());
+  PDB.meta={}; all.sort((a,b)=>a.created-b.created).forEach(p=>{(PDB.meta[p.key]=PDB.meta[p.key]||[]).push(p.id);PDB.urls[p.id]=URL.createObjectURL(p.blob);});
+}
+async function photoAdd(key,blob){
+  if(!PDB.db) throw new Error("no idb");
+  const p={id:uid(),key,blob,created:Date.now()};
+  await idbReq(idbTx("readwrite").put(p));
+  (PDB.meta[key]=PDB.meta[key]||[]).push(p.id);PDB.urls[p.id]=URL.createObjectURL(blob);
+}
+async function photoDel(key,id){
+  await idbReq(idbTx("readwrite").delete(id));
+  PDB.meta[key]=(PDB.meta[key]||[]).filter(x=>x!==id);
+  try{URL.revokeObjectURL(PDB.urls[id]);}catch(e){} delete PDB.urls[id];
+}
+function shrink(file,max=1600,q=.82){return new Promise((res,rej)=>{
+  const url=URL.createObjectURL(file),img=new Image();
+  img.onload=()=>{let w=img.naturalWidth,h=img.naturalHeight;const s=Math.min(1,max/Math.max(w,h));w=Math.round(w*s);h=Math.round(h*s);
+    const c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(img,0,0,w,h);URL.revokeObjectURL(url);
+    c.toBlob(b=>b?res(b):rej(new Error("toBlob")),"image/jpeg",q);};
+  img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error("img"));};img.src=url;});}
+const nPhotos=k=>(PDB.meta[k]||[]).length;
+const nNotes=k=>(state.notes[k]||[]).length;
+let tab = 0;
+function today(d=new Date()){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),dd=String(d.getDate()).padStart(2,"0");return `${y}-${m}-${dd}`;}
+function parse(s){const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d);}
+function fmtJ(s){if(!s)return "—";const d=parse(s);return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;}
+function diffDays(a,b){return Math.round((parse(b)-parse(a))/86400000);}
+
+function loadLocal(){try{const s=localStorage.getItem(LS);if(s)return JSON.parse(s);}catch(e){}return null;}
+function saveLocal(){try{localStorage.setItem(LS,JSON.stringify(state));}catch(e){}}
+
+/* ---------- cloud (db) ---------- */
+let dbRef=null, saveTimer=null, saving=false, pending=false;
+const syncEl=document.getElementById("sync");
+function setSync(t){syncEl.textContent=t;}
+async function initCloud(){
+  let timer=setTimeout(()=>{if(!dbRef)setSync("このブラウザに保存中");},10000);
+  try{
+    const [db,user]=await Promise.all([claude.use("db"),claude.use("user")]);
+    if(!db||!user){clearTimeout(timer);setSync("このブラウザに保存中");return;}
+    const id=await user.id();
+    if(!id){clearTimeout(timer);setSync("このブラウザに保存中");return;}
+    const ref=db.collection("data/users/"+id).doc("progress");
+    const snap=await ref.get();
+    clearTimeout(timer);
+    let data=null;
+    if(snap){ if(typeof snap.data==="function") data=snap.data(); else if(snap.exists===false) data=null; else data=snap.data!==undefined?snap.data:snap; }
+    dbRef=ref;
+    if(data && data.read && (data.updatedAt||0)>=(state.updatedAt||0)){
+      state=norm(data); saveLocal(); render();
+    } else if(Object.keys(state.read).length){ queueSave(true); }
+    setSync("☁️ アカウントに自動保存中");
+  }catch(e){clearTimeout(timer);setSync("このブラウザに保存中");}
+}
+function queueSave(now){
+  saveLocal();
+  if(!dbRef) return;
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(flush, now?0:800);
+}
+async function flush(){
+  if(saving){pending=true;return;}
+  saving=true;
+  try{await dbRef.set(JSON.parse(JSON.stringify(state)));setSync("☁️ 保存しました");}
+  catch(e){setSync("⚠️ 保存に失敗（このブラウザには保存済み）");}
+  saving=false;
+  if(pending){pending=false;flush();}
+}
+
+/* ---------- derived ---------- */
+function countRead(){return ALL.filter(c=>state.read[c.key]).length;}
+function volDone(vi){return VOLS[vi].every((_,ci)=>state.read[(vi+1)+"-"+(ci+1)]);}
+function volCount(vi){return VOLS[vi].filter((_,ci)=>state.read[(vi+1)+"-"+(ci+1)]).length;}
+function dayCounts(){const m={};Object.values(state.read).forEach(d=>{if(d)m[d]=(m[d]||0)+1;});return m;}
+function streak(){
+  const m=dayCounts();let d=new Date();
+  if(!m[today(d)]){d.setDate(d.getDate()-1);if(!m[today(d)])return 0;}
+  let n=0;while(m[today(d)]){n++;d.setDate(d.getDate()-1);}return n;
+}
+function bestStreak(){
+  const days=Object.keys(dayCounts()).sort();let best=0,cur=0,prev=null;
+  days.forEach(s=>{cur=(prev&&diffDays(prev,s)===1)?cur+1:1;best=Math.max(best,cur);prev=s;});return best;
+}
+function weekCount(){const m=dayCounts();let n=0;const d=new Date();const dow=(d.getDay()+6)%7;
+  for(let i=0;i<=dow;i++){const x=new Date();x.setDate(x.getDate()-i);n+=m[today(x)]||0;}return n;}
+function nextChapter(){return ALL.find(c=>!state.read[c.key]);}
+
+/* ---------- messages ---------- */
+const CHEERS=["一章読了！ 今日も前進しました。","いいペースです。この調子で！","読んだ分だけ、心に力が湧いてきますね。","一歩一歩が、大きな道になります。","素晴らしい！ 次の章も楽しみですね。","今日の一章が、明日の力に。","コツコツ続けるあなたが一番の勝利者です。","また一つ、花が咲きました。"];
+function heroMsg(n,s){
+  if(n===TOTAL) return "🎉 全30巻・122章、完全読了！ 本当におめでとうございます。";
+  if(n===0) return "最初の一章から始めましょう。読んだら章名をタップ！";
+  const pct=n/TOTAL*100;
+  let m = s>=7?`${s}日連続で読書中！ 素晴らしい継続力です。`: s>=2?`${s}日連続！ 明日も一章、読み進めましょう。`: s===1?"今日も読めました！ 明日もつなげて連続記録を伸ばそう。":"今日の一章で、また連続記録をスタートしよう。";
+  if(pct>=75) m+=" ゴールはもうすぐそこです。";
+  else if(pct>=50) m+=" 折り返し地点を越えました！";
+  else if(pct>=25) m+=" 4分の1を突破、順調です。";
+  return m;
+}
+
+/* ---------- badges ---------- */
+function badgeList(){
+  const n=countRead(),vols=VOLS.filter((_,i)=>volDone(i)).length,best=Math.max(bestStreak(),state.bestStreak||0);
+  return [
+    {e:"🌱",t:"はじめの一章",ok:n>=1},
+    {e:"📖",t:"10章読了",ok:n>=10},
+    {e:"🌸",t:"第1巻読了",ok:volDone(0)},
+    {e:"📝",t:"はじめてのメモ",ok:Object.keys(state.notes||{}).length>0},
+    {e:"🔥",t:"3日連続",ok:best>=3},
+    {e:"⚡",t:"7日連続",ok:best>=7},
+    {e:"🌟",t:"30日連続",ok:best>=30},
+    {e:"🎯",t:"25%突破",ok:n>=Math.ceil(TOTAL*.25)},
+    {e:"🌗",t:"折り返し50%",ok:n>=Math.ceil(TOTAL*.5)},
+    {e:"💗",t:"花の巻（1–10巻）制覇",ok:[...Array(10).keys()].every(volDone)},
+    {e:"💖",t:"ハートの巻（11–20巻）制覇",ok:[...Array(10).keys()].every(i=>volDone(i+10))},
+    {e:"⭐",t:"星の巻（21–30巻）制覇",ok:[...Array(10).keys()].every(i=>volDone(i+20))},
+    {e:"🏆",t:"全巻読了",ok:vols===30}
+  ];
+}
+
+/* ---------- render ---------- */
+function render(){
+  const n=countRead(),pct=Math.floor(n/TOTAL*100),s=streak(),b=bestStreak();
+  if(b>(state.bestStreak||0)) state.bestStreak=b;
+  document.getElementById("ringArc").style.strokeDashoffset=402.1*(1-n/TOTAL);
+  document.getElementById("pct").innerHTML=pct+"<small>%</small>";
+  document.getElementById("cnt").textContent=`${n} / ${TOTAL} 章`;
+  document.getElementById("sVols").innerHTML=VOLS.filter((_,i)=>volDone(i)).length+"<small>/ 30巻</small>";
+  document.getElementById("sStreak").innerHTML=s+"<small>日</small>";
+  document.getElementById("sWeek").innerHTML=weekCount()+"<small>章</small>";
+  document.getElementById("sBest").innerHTML=(state.bestStreak||0)+"<small>日</small>";
+  document.getElementById("msg").textContent=heroMsg(n,s);
+
+  const nx=nextChapter(),box=document.getElementById("nextBox");
+  if(nx){box.style.display="";document.getElementById("nextTitle").innerHTML=`<span>第${nx.vi+1}巻 ・ ${nx.ci+1}章目</span>${nx.name}`;}
+  else box.style.display="none";
+
+  renderHeat(); renderGoal(n); renderBadges(); renderTabs(); renderGrid();
+  document.getElementById("dStart").textContent=fmtJ(state.start);
+  document.getElementById("dEnd").textContent=fmtJ(state.end);
+}
+function renderHeat(){
+  const m=dayCounts(),el=document.getElementById("heat");const t=new Date();
+  const dow=(t.getDay()+6)%7; const startOff=7*15+dow; let h="";
+  for(let i=startOff;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const k=today(d),c=m[k]||0;
+    const l=c===0?"":c===1?"l1":c===2?"l2":"l3";
+    h+=`<i class="${l}${i===0?' today':''}" title="${fmtJ(k)}：${c}章"></i>`;}
+  el.innerHTML=h;
+}
+function renderGoal(n){
+  const tg=state.target||DEFAULT_TARGET; document.getElementById("target").value=tg;
+  const t=today(),days=diffDays(t,tg),left=TOTAL-n;
+  document.getElementById("gDays").textContent=days>0?`あと ${days.toLocaleString()} 日`:(days===0?"今日！":"期限を過ぎました");
+  document.getElementById("gLeft").textContent=`${left} 章`;
+  let pace="—";
+  if(left===0) pace="達成済み 🎉";
+  else if(days>0){const perWeek=left/days*7; pace= perWeek>=7?`1日 ${(left/days).toFixed(1)} 章`:`週 ${perWeek.toFixed(1)} 章（約${Math.max(1,Math.round(days/left))}日に1章）`;}
+  document.getElementById("gPace").textContent=pace;
+  document.getElementById("gMine").style.width=(n/TOTAL*100)+"%";
+  let ideal=0,note="";
+  if(state.start){const span=diffDays(state.start,tg),el=diffDays(state.start,t);ideal=span>0?Math.min(1,Math.max(0,el/span)):1;
+    const idealN=Math.round(ideal*TOTAL);
+    note = n>=idealN ? `<span style="color:var(--ok)">✓ 目安より ${n-idealN} 章リード中！</span>` : `目安まであと ${idealN-n} 章。マイペースで大丈夫！`;}
+  else note="最初の章を読むと、開始日から目安ペースを計算します。";
+  document.getElementById("gIdeal").style.width=(ideal*100)+"%";
+  document.getElementById("gNote").innerHTML=note;
+}
+function renderBadges(){
+  document.getElementById("badges").innerHTML=badgeList().map(b=>`<div class="badge ${b.ok?'got':''}"><span class="e">${b.e}</span>${b.t}</div>`).join("");
+}
+function renderTabs(){
+  const labels=["🌸 第1–10巻","💗 第11–20巻","⭐ 第21–30巻"];
+  document.getElementById("tabs").innerHTML=labels.map((l,i)=>{
+    let r=0,tot=0;for(let v=i*10;v<i*10+10;v++){r+=volCount(v);tot+=VOLS[v].length;}
+    return `<button class="tab ${i===tab?'on':''}" data-tab="${i}">${l}<span class="tp">${r}/${tot}</span></button>`;}).join("");
+}
+let popKey=null;
+function renderGrid(){
+  const t=TONES[tab];let h="";
+  for(let vi=tab*10;vi<tab*10+10;vi++){
+    const c=volCount(vi),tot=VOLS[vi].length,done=c===tot;
+    h+=`<div class="vol ${done?'done':''}" style="--tone:${t.tone}">
+      <div class="stamp">読了</div>
+      <div class="vh"><span class="vn">第${vi+1}巻</span><span class="vp">${c}/${tot}</span></div>
+      <div class="mini"><div style="width:${c/tot*100}%"></div></div>`;
+    VOLS[vi].forEach((name,ci)=>{const k=(vi+1)+"-"+(ci+1),r=state.read[k],cnt=nNotes(k)+nPhotos(k);
+      h+=`<div class="chr"><button class="ch ${r?'read':''} ${popKey===k?'pop':''}" data-key="${k}">${icon(tab,!!r)}<span class="nm">${name}</span>${r?`<span class="dt">${r.slice(5).replace("-","/")}</span>`:''}</button><button class="memo ${cnt?'has':''}" data-memo="${k}" aria-label="${name}のメモ・写真">📝${cnt?`<span class="n">${cnt}</span>`:''}</button></div>`;});
+    h+=`</div>`;
+  }
+  document.getElementById("grid").innerHTML=h; popKey=null;
+}
+
+/* ---------- actions ---------- */
+let undoSnap=null,toastTimer=null;
+function snapshot(){return JSON.stringify(state);}
+function toggle(key){
+  const before=snapshot(),nBefore=countRead();
+  const c=ALL.find(x=>x.key===key);
+  const volWasDone=volDone(c.vi);
+  if(state.read[key]){delete state.read[key];}
+  else{state.read[key]=today();if(!state.start)state.start=today();popKey=key;}
+  const n=countRead();
+  state.end = n===TOTAL ? (state.end||today()) : null;
+  state.updatedAt=Date.now();
+  const nowDone=volDone(c.vi);
+  tab=Math.floor(c.vi/10);
+  render(); queueSave();
+  undoSnap=before;
+  if(n>nBefore){
+    if(n===TOTAL) celebrate("🏆","全巻読了！","全30巻・122章を読み切りました。<br>本当におめでとうございます！",true,key);
+    else if(nowDone&&!volWasDone) celebrate(["🌸","💗","⭐"][Math.floor(c.vi/10)],`第${c.vi+1}巻 読了！`,`「${VOLS[c.vi].join("」「")}」<br>全${VOLS[c.vi].length}章を読み終えました。`,true,key);
+    else { const mil=[.25,.5,.75].find(p=>nBefore<Math.ceil(TOTAL*p)&&n>=Math.ceil(TOTAL*p));
+      if(mil) celebrate("🎯",`${mil*100}% 突破！`,`${n}章を読了。着実に前進しています！`,false,key);
+      else showToast(`「${c.name}」読了！ ${CHEERS[Math.floor(Math.random()*CHEERS.length)]}`,key); }
+  } else showToast(`「${c.name}」を未読に戻しました`);
+}
+let toastKey=null;
+function showToast(t,memoKey,noUndo){
+  toastKey=memoKey||null;
+  document.getElementById("toastMsg").textContent=t;const el=document.getElementById("toast");el.classList.add("show");
+  document.getElementById("toastMemo").style.display=memoKey?"":"none";
+  document.getElementById("toastUndo").style.display=noUndo?"none":"";
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove("show"),memoKey?6000:4000);
+}
+document.getElementById("toastMemo").onclick=()=>{document.getElementById("toast").classList.remove("show");if(toastKey)openSheet(toastKey);};
+document.getElementById("toastUndo").onclick=()=>{if(!undoSnap)return;state=JSON.parse(undoSnap);state.updatedAt=Date.now();undoSnap=null;render();queueSave();document.getElementById("toast").classList.remove("show");};
+
+const modal=document.getElementById("modal"),mbox=document.getElementById("modalBox");
+function openModal(html){mbox.innerHTML=html;modal.classList.add("show");}
+function closeModal(){modal.classList.remove("show");}
+modal.addEventListener("click",e=>{if(e.target===modal)closeModal();});
+function celebrate(emoji,title,body,big,lastKey){
+  document.getElementById("toast").classList.remove("show");
+  openModal(`<div class="big">${emoji}</div><h3>${title}</h3><p>${body}</p><div class="acts"><button class="btn btn-ghost" id="mUndo">元に戻す</button>${lastKey?'<button class="btn btn-ghost" id="mMemo">📝 メモを残す</button>':''}<button class="btn btn-red" id="mOk">やったね！</button></div>`);
+  document.getElementById("mOk").onclick=closeModal;
+  if(lastKey) document.getElementById("mMemo").onclick=()=>{closeModal();openSheet(lastKey);};
+  document.getElementById("mUndo").onclick=()=>{closeModal();document.getElementById("toastUndo").click();};
+  confetti(big?220:110);
+}
+
+document.getElementById("grid").addEventListener("click",e=>{const m=e.target.closest(".memo");if(m){openSheet(m.dataset.memo);return;}const b=e.target.closest(".ch");if(b)toggle(b.dataset.key);});
+document.getElementById("tabs").addEventListener("click",e=>{const b=e.target.closest(".tab");if(b){tab=+b.dataset.tab;renderTabs();renderGrid();}});
+document.getElementById("nextBtn").onclick=()=>{const nx=nextChapter();if(nx)toggle(nx.key);};
+document.getElementById("target").onchange=e=>{if(e.target.value){state.target=e.target.value;state.updatedAt=Date.now();render();queueSave();}};
+
+/* ---------- view switch & notebook ---------- */
+let view="table";
+document.getElementById("views").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;view=b.dataset.v;
+  document.querySelectorAll("#views button").forEach(x=>x.classList.toggle("on",x===b));
+  document.getElementById("vTable").style.display=view==="table"?"":"none";
+  document.getElementById("vNotes").style.display=view==="notes"?"":"none";
+  if(view==="notes")renderNotebook();});
+document.getElementById("nbSearch").oninput=()=>renderNotebook();
+function renderNotebook(){
+  const q=document.getElementById("nbSearch").value.trim();
+  const re=q?new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"g"):null;
+  const hl=t=>{let s=esc(t);if(re){const qe=esc(q);s=s.split(qe).join(`<mark>${qe}</mark>`);}return s;};
+  let h="";
+  ALL.forEach(c=>{
+    const notes=state.notes[c.key]||[],ph=PDB.meta[c.key]||[];
+    if(!notes.length&&!ph.length)return;
+    const nameHit=q&&c.name.includes(q);
+    const shown=q&&!nameHit?notes.filter(n=>n.text.includes(q)):notes;
+    if(q&&!nameHit&&!shown.length)return;
+    const tone=TONES[Math.floor(c.vi/10)].tone;
+    h+=`<div class="nb-ch" data-k="${c.key}" style="--tone:${tone}"><div class="h"><b>${hl(c.name)}</b><span>第${c.vi+1}巻・${c.ci+1}章目</span></div>`;
+    shown.forEach(n=>h+=`<div class="note">${hl(n.text)}<div class="meta">${fmtJ(n.date)}</div></div>`);
+    if(ph.length&&(!q||nameHit))h+=`<div class="thumbs">${ph.map(id=>`<img src="${PDB.urls[id]}" alt="">`).join("")}</div>`;
+    h+=`</div>`;
+  });
+  document.getElementById("nbList").innerHTML=h||`<div class="empty">${q?"見つかりませんでした。":"まだメモはありません。<br>読了表の各章の 📝 から、心に響いた言葉や<br>ページの写真を残せます。"}</div>`;
+}
+document.getElementById("nbList").addEventListener("click",e=>{const c=e.target.closest(".nb-ch");if(c)openSheet(c.dataset.k);});
+
+/* ---------- chapter sheet ---------- */
+const sheet=document.getElementById("sheet"),sbox=document.getElementById("sheetBox");
+let sheetKey=null,editingId=null,delArm=null;
+function openSheet(k){sheetKey=k;editingId=null;delArm=null;renderSheet();sheet.classList.add("show");}
+function closeSheet(){const ta=document.getElementById("shText");if(ta&&ta.value.trim())saveNote();
+  sheet.classList.remove("show");sheetKey=null;render();if(view==="notes")renderNotebook();}
+sheet.addEventListener("click",e=>{if(e.target===sheet)closeSheet();});
+function renderSheet(){
+  const c=byKey(sheetKey),tier=Math.floor(c.vi/10),r=state.read[c.key];
+  const notes=state.notes[c.key]||[],ph=PDB.meta[c.key]||[];
+  sbox.style.setProperty("--tone",TONES[tier].tone);
+  sbox.innerHTML=`<div class="sh-head"><div><div class="vlabel">第${c.vi+1}巻・${c.ci+1}章目</div><div class="ttl">${esc(c.name)}</div></div><button class="x" id="shX" aria-label="閉じる">✕</button></div>
+  <div class="readrow">${icon(tier,!!r)}<span class="sp">${r?"読了日":"まだ読んでいません"}</span>${r?`<input type="date" id="shDate" value="${r}">`:""}<button class="btn btn-sm ${r?"btn-ghost":"btn-red"}" id="shRead">${r?"未読に戻す":"読了にする"}</button></div>
+  <div class="sec">💬 心に響いた言葉・感想</div>
+  ${notes.map(n=>editingId===n.id?"":`<div class="note">${esc(n.text)}<div class="meta">${fmtJ(n.date)}<button data-edit="${n.id}">編集</button><button data-del="${n.id}">${delArm===n.id?"もう一度押すと削除":"削除"}</button></div></div>`).join("")}
+  <textarea id="shText" placeholder="心に響いた一節や、感じたことを書き留めましょう">${editingId?esc((notes.find(n=>n.id===editingId)||{}).text||""):""}</textarea>
+  <div class="addrow">${editingId?'<button class="btn btn-ghost btn-sm" id="shCancel">やめる</button>':""}<button class="btn btn-red btn-sm" id="shSave">${editingId?"更新する":"メモを追加"}</button></div>
+  <div class="sec">📷 ページの写真</div>
+  <div class="photos">${ph.map((id,i)=>`<button class="ph" data-ph="${i}"><img src="${PDB.urls[id]}" alt="写真${i+1}"></button>`).join("")}
+    <button class="add" id="shCam"><b>📷</b>撮影する</button><button class="add" id="shLib"><b>🖼️</b>写真を選ぶ</button></div>
+  <div class="hint">${PDB.db?"写真はこの端末の中に保存されます（タップで拡大）。":"このブラウザでは写真を保存できません。"}</div>`;
+  const $=id=>document.getElementById(id);
+  $("shX").onclick=closeSheet;
+  $("shRead").onclick=()=>{toggle(sheetKey);renderSheet();};
+  if($("shDate"))$("shDate").onchange=e=>{if(e.target.value){state.read[sheetKey]=e.target.value;state.updatedAt=Date.now();render();queueSave();}};
+  $("shSave").onclick=()=>{saveNote();renderSheet();};
+  if($("shCancel"))$("shCancel").onclick=()=>{editingId=null;renderSheet();};
+  $("shCam").onclick=()=>$("fCam").click();
+  $("shLib").onclick=()=>$("fLib").click();
+}
+sbox.addEventListener("click",e=>{
+  const ed=e.target.closest("[data-edit]"),dl=e.target.closest("[data-del]"),ph=e.target.closest("[data-ph]");
+  if(ed){editingId=ed.dataset.edit;delArm=null;renderSheet();const ta=document.getElementById("shText");ta.focus();ta.setSelectionRange(ta.value.length,ta.value.length);}
+  else if(dl){const id=dl.dataset.del;if(delArm!==id){delArm=id;renderSheet();return;}
+    state.notes[sheetKey]=(state.notes[sheetKey]||[]).filter(n=>n.id!==id);if(!state.notes[sheetKey].length)delete state.notes[sheetKey];
+    delArm=null;state.updatedAt=Date.now();queueSave();renderSheet();}
+  else if(ph){openViewer(sheetKey,+ph.dataset.ph);}
+});
+function saveNote(){const ta=document.getElementById("shText");if(!ta)return;const t=ta.value.trim();if(!t)return;
+  const arr=state.notes[sheetKey]=state.notes[sheetKey]||[];
+  if(editingId){const n=arr.find(x=>x.id===editingId);if(n)n.text=t;editingId=null;}
+  else arr.push({id:uid(),text:t,date:today()});
+  ta.value="";state.updatedAt=Date.now();queueSave();}
+async function onFiles(files){if(!sheetKey||!files.length)return;let ok=0;
+  for(const f of files){try{const b=await shrink(f);await photoAdd(sheetKey,b);ok++;}catch(e){}}
+  renderSheet();showToast(ok?`写真を${ok}枚保存しました`:"写真を保存できませんでした",null,true);}
+["fCam","fLib"].forEach(id=>document.getElementById(id).onchange=e=>{const f=[...e.target.files];e.target.value="";onFiles(f);});
+
+/* ---------- photo viewer ---------- */
+const viewer=document.getElementById("viewer");let vKey=null,vIdx=0,vArm=false;
+function openViewer(k,i){vKey=k;vIdx=i;vArm=false;showV();viewer.classList.add("show");}
+function showV(){const ids=PDB.meta[vKey]||[];if(!ids.length){viewer.classList.remove("show");return;}
+  vIdx=(vIdx+ids.length)%ids.length;document.getElementById("vImg").src=PDB.urls[ids[vIdx]];
+  document.getElementById("vCap").textContent=`${byKey(vKey).name}　${vIdx+1} / ${ids.length}`;
+  document.getElementById("vDel").textContent=vArm?"もう一度押すと削除":"削除";
+  ["vPrev","vNext"].forEach(id=>document.getElementById(id).style.display=ids.length>1?"":"none");}
+document.getElementById("vClose").onclick=()=>{viewer.classList.remove("show");if(sheetKey)renderSheet();};
+document.getElementById("vPrev").onclick=()=>{vIdx--;vArm=false;showV();};
+document.getElementById("vNext").onclick=()=>{vIdx++;vArm=false;showV();};
+document.getElementById("vDel").onclick=async()=>{if(!vArm){vArm=true;showV();return;}vArm=false;
+  const id=(PDB.meta[vKey]||[])[vIdx];if(id)await photoDel(vKey,id);showV();if(sheetKey)renderSheet();};
+let tx=null;viewer.addEventListener("touchstart",e=>{if(e.touches.length===1)tx=e.touches[0].clientX;},{passive:true});
+viewer.addEventListener("touchend",e=>{if(tx===null)return;const dx=e.changedTouches[0].clientX-tx;tx=null;if(Math.abs(dx)>60){vIdx+=dx<0?1:-1;vArm=false;showV();}});
+document.addEventListener("keydown",e=>{
+  if(viewer.classList.contains("show")){if(e.key==="Escape")document.getElementById("vClose").click();if(e.key==="ArrowLeft")document.getElementById("vPrev").click();if(e.key==="ArrowRight")document.getElementById("vNext").click();}
+  else if(e.key==="Escape"&&sheet.classList.contains("show"))closeSheet();});
+
+/* ---------- backup ---------- */
+const blobToData=b=>new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(b);});
+function dataToBlob(d){const [h,b64]=d.split(",");const mime=(h.match(/data:(.*?);/)||[])[1]||"image/jpeg";const bin=atob(b64);const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new Blob([u],{type:mime});}
+document.getElementById("bExport").onclick=()=>{
+  const np=Object.values(PDB.meta).reduce((a,x)=>a+x.length,0);
+  openModal(`<div class="big">💾</div><h3>バックアップを保存</h3><p>読了記録・メモ${np?`・写真${np}枚`:""}をファイルに保存します。<br>機種変更のときは、新しい端末で「復元」してください。</p><div class="acts"><button class="btn btn-ghost" id="mText">文字でコピー（写真なし）</button><button class="btn btn-red" id="mFile">ファイルに保存</button></div>`);
+  document.getElementById("mFile").onclick=async()=>{
+    const photos=[];if(PDB.db){const all=await idbReq(idbTx("readonly").getAll());for(const p of all)photos.push({id:p.id,key:p.key,created:p.created,data:await blobToData(p.blob)});}
+    const blob=new Blob([JSON.stringify({app:"shin-ningen-kakumei",version:2,state,photos})],{type:"application/json"});
+    const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`新人間革命_読了表_${today()}.json`;document.body.appendChild(a);a.click();a.remove();
+    closeModal();showToast("バックアップファイルを保存しました",null,true);};
+  document.getElementById("mText").onclick=async()=>{const txt=JSON.stringify({app:"shin-ningen-kakumei",version:2,state});let ok=false;try{await navigator.clipboard.writeText(txt);ok=true;}catch(e){}
+    openModal(`<h3>バックアップ（文字）</h3><p>${ok?"クリップボードにコピーしました。":"下の文字列をすべて選択してコピーしてください。"}</p><textarea readonly>${esc(txt)}</textarea><div class="acts"><button class="btn btn-red" id="mOk">閉じる</button></div>`);
+    document.getElementById("mOk").onclick=closeModal;};
+};
+async function restore(d){
+  if(!d)throw 0; const st=d.state||(d.read?d:null); if(!st||typeof st.read!=="object")throw 0;
+  state=norm(st);state.updatedAt=Date.now();
+  if(Array.isArray(d.photos)&&d.photos.length&&PDB.db){
+    await idbReq(idbTx("readwrite").clear());Object.values(PDB.urls).forEach(u=>{try{URL.revokeObjectURL(u);}catch(e){}});PDB.meta={};PDB.urls={};
+    for(const p of d.photos){const rec={id:p.id||uid(),key:p.key,blob:dataToBlob(p.data),created:p.created||Date.now()};await idbReq(idbTx("readwrite").put(rec));}
+    await photosInit();}
+  render();queueSave(true);if(view==="notes")renderNotebook();
+}
+document.getElementById("bImport").onclick=()=>{
+  openModal(`<h3>バックアップから復元</h3><p>保存したファイルを選ぶか、文字を貼り付けてください。<br>今の記録は上書きされます。</p><div class="acts" style="margin-bottom:12px"><button class="btn btn-red" id="mPick">ファイルを選ぶ</button></div><textarea id="imp" placeholder="文字で保存した場合はここに貼り付け"></textarea><div class="acts"><button class="btn btn-ghost" id="mCancel">やめる</button><button class="btn btn-ghost" id="mOk">貼り付けた内容で復元</button></div>`);
+  document.getElementById("mCancel").onclick=closeModal;
+  document.getElementById("mPick").onclick=()=>document.getElementById("fBak").click();
+  document.getElementById("mOk").onclick=async()=>{try{await restore(JSON.parse(document.getElementById("imp").value));closeModal();showToast("復元しました",null,true);}catch(e){document.getElementById("imp").style.borderColor="var(--red)";}};
+};
+document.getElementById("fBak").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;
+  try{await restore(JSON.parse(await f.text()));closeModal();showToast("復元しました",null,true);}catch(err){showToast("このファイルは読み込めませんでした",null,true);}};
+document.getElementById("bReset").onclick=()=>{
+  openModal(`<div class="big">🔄</div><h3>読了記録をリセットしますか？</h3><p>読了の印・開始日・連続記録が消えます。<br>メモと写真は残るので、2周目にも使えます。</p><div class="acts"><button class="btn btn-ghost" id="mCancel">やめる</button><button class="btn btn-red" id="mOk">リセットする</button></div>`);
+  document.getElementById("mCancel").onclick=closeModal;
+  document.getElementById("mOk").onclick=()=>{state=norm({notes:state.notes,target:state.target});state.updatedAt=Date.now();tab=0;render();queueSave(true);closeModal();};
+};
+
+/* ---------- confetti ---------- */
+const cv=document.getElementById("fx"),cx=cv.getContext("2d");let parts=[],raf=null;
+function confetti(n){
+  cv.width=innerWidth*devicePixelRatio;cv.height=innerHeight*devicePixelRatio;cx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+  const cols=["#e86a9a","#e2574c","#e3a51b","#7cc4f0","#9fd8a8","#d7263d"];
+  for(let i=0;i<n;i++)parts.push({x:innerWidth/2+(Math.random()-.5)*120,y:innerHeight*.35,vx:(Math.random()-.5)*14,vy:-Math.random()*14-4,r:Math.random()*6+4,c:cols[i%cols.length],a:Math.random()*6,va:(Math.random()-.5)*.3,life:0,s:Math.random()<.5});
+  if(!raf)loop();
+}
+function loop(){
+  cx.clearRect(0,0,innerWidth,innerHeight);
+  parts.forEach(p=>{p.vy+=.35;p.vx*=.99;p.x+=p.vx;p.y+=p.vy;p.a+=p.va;p.life++;
+    cx.save();cx.translate(p.x,p.y);cx.rotate(p.a);cx.fillStyle=p.c;
+    if(p.s){cx.beginPath();cx.arc(0,0,p.r/2,0,7);cx.fill();}else cx.fillRect(-p.r/2,-p.r/4,p.r,p.r/2);cx.restore();});
+  parts=parts.filter(p=>p.y<innerHeight+40&&p.life<260);
+  if(parts.length)raf=requestAnimationFrame(loop);else{raf=null;cx.clearRect(0,0,innerWidth,innerHeight);}
+}
+
+/* ---------- boot ---------- */
+const local=loadLocal(); if(local&&local.read) state=norm(local);
+const nx0=nextChapter(); if(nx0) tab=Math.floor(nx0.vi/10);
+render();
+photosInit().then(()=>{renderGrid();if(view==="notes")renderNotebook();});
+if(window.claude&&typeof claude.use==="function") initCloud(); else setSync("このブラウザに保存中");
+</script>
+</body>
+</html>
