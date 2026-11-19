@@ -58,7 +58,6 @@ header p{margin:0;color:var(--sub);font-size:13px}
 .btn-red:active{transform:scale(.97)}
 .btn-ghost{background:#f3ece4;color:var(--ink)}
 .btn-sm{padding:7px 14px;font-size:13px}
-.btn:disabled{opacity:.45;cursor:default}
 
 /* panels */
 .row2{display:grid;grid-template-columns:1.3fr 1fr;gap:14px;margin-top:14px}
@@ -264,7 +263,7 @@ mark{background:#ffe58a;border-radius:3px;padding:0 1px}
     <b>📖 すでに途中まで読んでいますか？</b><br>読み終えたところまで、まとめて入力できます。
     <span style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn btn-red btn-sm" id="midOpen">まとめて入力する</button><button class="btn btn-ghost btn-sm" id="midSkip">第1巻から始める</button></span>
   </div>
-  <div id="bkNote" style="display:none;margin-top:14px;background:#fff8e1;border:1px solid #f3dc94;border-radius:16px;padding:12px 14px;font-size:13px;line-height:1.7"></div>
+  <div id="bkNote" style="display:none;position:sticky;top:8px;z-index:40;box-shadow:0 4px 14px rgba(90,60,40,.12);margin-top:14px;background:#fff8e1;border:1px solid #f3dc94;border-radius:16px;padding:12px 14px;font-size:13px;line-height:1.7"></div>
 
   <section class="hero">
     <div class="ring">
@@ -375,7 +374,6 @@ mark{background:#ffe58a;border-radius:3px;padding:0 1px}
     <button class="btn btn-ghost btn-sm" id="bImport">バックアップから復元</button>
     <button class="btn btn-ghost btn-sm" id="bReset">読了記録をリセット</button>
   </div>
-  <div id="abBox" style="display:none;margin:14px auto 0;max-width:560px;background:var(--card);border-radius:16px;padding:12px 16px;font-size:13px;line-height:1.7;box-shadow:var(--shadow)"></div>
   <p style="text-align:center;font-size:11px;color:var(--sub);margin-top:14px;line-height:1.7">記録・メモ・写真は、このスマホ／パソコンのブラウザ内に保存されます。<br>機種変更の前などは「バックアップを保存」でファイルに残してください。</p>
 </div>
 
@@ -396,7 +394,7 @@ mark{background:#ffe58a;border-radius:3px;padding:0 1px}
   <div class="flash" id="camFlash"></div>
   <div class="cbar"><button class="side" id="camLast" aria-label="撮った写真"></button><button class="shut" id="camShut" aria-label="撮影"></button><button class="side" id="camFlip" aria-label="カメラ切り替え">🔄</button></div>
 </div>
-<input type="file" id="fBak" accept=".json,.txt,application/json,text/plain" hidden>
+<input type="file" id="fBak" accept=".json,application/json" hidden>
 
 <script>
 const VOLS = [
@@ -484,12 +482,12 @@ async function photoAdd(key,blob){
   if(!PDB.db) throw new Error("no idb");
   const p={id:uid(),key,blob,created:Date.now()};
   await idbReq(idbTx("readwrite").put(p));
-  if(typeof scheduleAuto==="function")scheduleAuto();
+  state.updatedAt=Date.now();queueSave();
   (PDB.meta[key]=PDB.meta[key]||[]).push(p.id);PDB.urls[p.id]=URL.createObjectURL(blob);
 }
 async function photoDel(key,id){
   await idbReq(idbTx("readwrite").delete(id));
-  if(typeof scheduleAuto==="function")scheduleAuto();
+  state.updatedAt=Date.now();queueSave();
   PDB.meta[key]=(PDB.meta[key]||[]).filter(x=>x!==id);
   try{URL.revokeObjectURL(PDB.urls[id]);}catch(e){} delete PDB.urls[id];
 }
@@ -535,7 +533,7 @@ async function initCloud(){
 }
 function queueSave(now){
   saveLocal();
-  if(typeof scheduleAuto==="function")scheduleAuto();
+  if(typeof renderBackupNote==="function")renderBackupNote();
   if(!dbRef) return;
   clearTimeout(saveTimer);
   saveTimer=setTimeout(flush, now?0:800);
@@ -1007,104 +1005,17 @@ const blobToData=b=>new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr
 function dataToBlob(d){const [h,b64]=d.split(",");const mime=(h.match(/data:(.*?);/)||[])[1]||"image/jpeg";const bin=atob(b64);const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new Blob([u],{type:mime});}
 document.getElementById("bExport").onclick=()=>{
   const np=Object.values(PDB.meta).reduce((a,x)=>a+x.length,0);
-  const last=state.lastBackupAt?new Date(state.lastBackupAt-1):null;
-  openModal(`<div class="big">💾</div><h3>バックアップを保存</h3><p>読了記録・メモ${np?`・写真${np}枚`:""}をまとめて保存します。<br>スマホでは共有画面が開くので、「Googleドライブ」や「ファイルに保存」を選んでください。${last?`<br><span style="font-size:12px">前回の保存：${fmtJ(today(last))} ${String(last.getHours()).padStart(2,"0")}:${String(last.getMinutes()).padStart(2,"0")}</span>`:""}</p><div class="acts"><button class="btn btn-ghost" id="mText">文字でコピー（写真なし）</button><button class="btn btn-red" id="mFile">保存する</button></div>`);
-  document.getElementById("mFile").onclick=()=>{closeModal();quickBackup();};
+  openModal(`<div class="big">💾</div><h3>バックアップを保存</h3><p>読了記録・メモ${np?`・写真${np}枚`:""}をファイルに保存します。<br>機種変更のときは、新しい端末で「復元」してください。</p><div class="acts"><button class="btn btn-ghost" id="mText">文字でコピー（写真なし）</button><button class="btn btn-red" id="mFile">ファイルに保存</button></div>`);
+  document.getElementById("mFile").onclick=async()=>{
+    const photos=[];if(PDB.db){const all=await idbReq(idbTx("readonly").getAll());for(const p of all)photos.push({id:p.id,key:p.key,created:p.created,data:await blobToData(p.blob)});}
+    const blob=new Blob([JSON.stringify({app:"shin-ningen-kakumei",version:2,state,photos})],{type:"application/json"});
+    const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`新人間革命_読了表_${today()}.json`;document.body.appendChild(a);a.click();a.remove();
+    state.lastBackup=today();state.updatedAt=Date.now();state.lastBackupAt=state.updatedAt;queueSave();renderBackupNote();
+    closeModal();showToast("バックアップファイルを保存しました",null,true);};
   document.getElementById("mText").onclick=async()=>{const txt=JSON.stringify({app:"shin-ningen-kakumei",version:2,state});let ok=false;try{await navigator.clipboard.writeText(txt);ok=true;}catch(e){}
     openModal(`<h3>バックアップ（文字）</h3><p>${ok?"クリップボードにコピーしました。":"下の文字列をすべて選択してコピーしてください。"}</p><textarea readonly>${esc(txt)}</textarea><div class="acts"><button class="btn btn-red" id="mOk">閉じる</button></div>`);
     document.getElementById("mOk").onclick=closeModal;};
 };
-
-/* ---------- auto backup (PC) & one-tap backup (phone) ---------- */
-const AB={handle:null,status:"off",cache:null,timer:null,busy:false,again:false};
-const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.maxTouchPoints>1&&/Mac/.test(navigator.platform));
-let inTop=true;try{inTop=window.self===window.top;}catch(e){inTop=false;}
-const canFS=("showSaveFilePicker" in window)&&!isMobile&&inTop;
-async function buildBackupBlob(){
-  const photos=[];
-  if(PDB.db){const all=await idbReq(idbTx("readonly").getAll());for(const p of all)photos.push({id:p.id,key:p.key,created:p.created,data:await blobToData(p.blob)});}
-  return new Blob([JSON.stringify({app:"shin-ningen-kakumei",version:2,savedAt:new Date().toISOString(),state,photos})],{type:"application/json"});
-}
-function markBackedUp(){state.lastBackup=today();state.lastBackupAt=Date.now()+1;saveLocal();renderBackupNote();renderAB();}
-function scheduleAuto(){AB.cache=null;clearTimeout(AB.timer);AB.timer=setTimeout(runAuto,2500);}
-async function runAuto(){
-  if(AB.busy){AB.again=true;return;}
-  AB.busy=true;
-  try{
-    AB.cache=await buildBackupBlob();
-    if(AB.handle&&AB.status==="on"){const w=await AB.handle.createWritable();await w.write(AB.cache);await w.close();markBackedUp();}
-  }catch(e){if(AB.handle&&AB.status==="on"){AB.status="paused";renderAB();}}
-  AB.busy=false;
-  if(AB.again){AB.again=false;runAuto();}
-}
-function kv(mode,fn){return new Promise(res=>{try{const r=indexedDB.open("snk-settings",1);r.onupgradeneeded=()=>r.result.createObjectStore("kv");
-  r.onsuccess=()=>{try{const st=r.result.transaction("kv",mode).objectStore("kv");const q=fn(st);q.onsuccess=()=>res(q.result);q.onerror=()=>res(null);}catch(e){res(null);}};r.onerror=()=>res(null);}catch(e){res(null);}});}
-async function abInit(){
-  if(!canFS)return;
-  const h=await kv("readonly",st=>st.get("abHandle"));
-  if(h){AB.handle=h;try{const perm=await h.queryPermission({mode:"readwrite"});AB.status=perm==="granted"?"on":"paused";}catch(e){AB.status="paused";}
-    if(AB.status==="on")scheduleAuto();}
-  renderAB();renderBackupNote();
-}
-async function abStart(){
-  try{
-    const h=await window.showSaveFilePicker({suggestedName:"新人間革命_読了表_自動バックアップ.json",types:[{description:"バックアップ",accept:{"application/json":[".json"]}}]});
-    AB.handle=h;AB.status="on";await kv("readwrite",st=>st.put(h,"abHandle"));renderAB();await runAuto();
-    showToast("自動バックアップを始めました。変更のたびに保存されます",null,true);
-  }catch(e){}
-}
-async function abResume(){
-  try{const p=await AB.handle.requestPermission({mode:"readwrite"});if(p==="granted"){AB.status="on";renderAB();await runAuto();showToast("自動バックアップを再開しました",null,true);}}catch(e){}
-}
-async function abStop(){AB.handle=null;AB.status="off";await kv("readwrite",st=>st.delete("abHandle"));renderAB();renderBackupNote();}
-function renderAB(){
-  const el=document.getElementById("abBox");if(!el)return;
-  if(!canFS){el.style.display="none";return;}
-  el.style.display="";
-  const last=state.lastBackupAt?new Date(state.lastBackupAt-1):null;
-  const lt=last?`${last.getMonth()+1}/${last.getDate()} ${String(last.getHours()).padStart(2,"0")}:${String(last.getMinutes()).padStart(2,"0")}`:"—";
-  if(AB.status==="on")el.innerHTML=`<b style="color:var(--ok)">✓ 自動バックアップ中</b>　${esc(AB.handle.name)}<br><span style="color:var(--sub)">変更のたびにこのファイルへ上書き保存します（最終保存 ${lt}）</span><div style="margin-top:8px"><button class="btn btn-ghost btn-sm" id="abStop">自動バックアップを止める</button></div>`;
-  else if(AB.status==="paused")el.innerHTML=`<b>⏸ 自動バックアップが一時停止中</b>　${esc(AB.handle.name)}<br><span style="color:var(--sub)">ブラウザを開き直すと、もう一度許可が必要です。</span><div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-red btn-sm" id="abResume">再開する</button><button class="btn btn-ghost btn-sm" id="abStop">やめる</button></div>`;
-  else el.innerHTML=`<b>💻 パソコンでは自動バックアップができます</b><br><span style="color:var(--sub)">保存先のファイルを一度選ぶと、変更のたびに自動で上書き保存します（Chrome・Edge）。</span><div style="margin-top:8px"><button class="btn btn-red btn-sm" id="abStart">保存先を選んで始める</button></div>`;
-  const $=id=>document.getElementById(id);
-  if($("abStart"))$("abStart").onclick=abStart;if($("abResume"))$("abResume").onclick=abResume;if($("abStop"))$("abStop").onclick=abStop;
-}
-function downloadBlob(blob,name){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);}
-// 共有画面は「タップした直後」にしか開けない。準備（写真の変換）に時間がかかると無反応になるため、
-// 先に準備を終わらせてから、押されたその場で共有を呼ぶ。
-async function quickBackup(){
-  if(AB.cache){doShare();return;}
-  openModal(`<div class="big">💾</div><h3>バックアップを準備中…</h3><p id="bkP">写真が多いと数秒かかります。</p><div class="acts"><button class="btn btn-red" id="mOk" disabled>保存する</button></div>`);
-  try{AB.cache=await buildBackupBlob();}catch(e){}
-  const btn=document.getElementById("mOk"),p=document.getElementById("bkP");
-  if(!btn||!p)return;
-  p.textContent=AB.cache?"準備ができました。「保存する」を押してください。":"準備に失敗しました。もう一度お試しください。";
-  btn.disabled=!AB.cache;btn.onclick=()=>doShare();
-}
-function backupName(){return `新人間革命_読了表_${today()}`;}
-async function doShare(){
-  const blob=AB.cache,base=backupName();let err=null;
-  if(!blob){quickBackup();return;}
-  if(isMobile&&navigator.share&&navigator.canShare){
-    let file=new File([blob],base+".json",{type:"application/json"});
-    try{if(!navigator.canShare({files:[file]}))file=new File([blob],base+".txt",{type:"text/plain"});}catch(e){}
-    let ok=false;try{ok=navigator.canShare({files:[file]});}catch(e){}
-    if(ok){
-      try{await navigator.share({files:[file],title:"読了表のバックアップ"});
-        if(modal.classList.contains("show"))closeModal();markBackedUp();showToast("バックアップを保存しました",null,true);return;}
-      catch(e){if(e&&e.name==="AbortError")return;err=e;}
-    }
-    showDownloadLink(blob,base,err);return;
-  }
-  downloadBlob(blob,base+".json");if(modal.classList.contains("show"))closeModal();markBackedUp();showToast("バックアップファイルを保存しました",null,true);
-}
-function showDownloadLink(blob,base,err){
-  const url=URL.createObjectURL(blob);
-  openModal(`<div class="big">💾</div><h3>ファイルとして保存</h3><p>下のボタンを押して保存してください。${err?`<br><span style="font-size:11px">（共有画面を開けませんでした：${esc(err.name||"エラー")}）</span>`:""}</p><div class="acts"><a class="btn btn-red" id="mDl" href="${url}" download="${base}.json" style="text-decoration:none;display:inline-block">ファイルを保存</a><button class="btn btn-ghost" id="mTxt">文字でコピー（写真なし）</button></div>`);
-  document.getElementById("mDl").onclick=()=>{setTimeout(()=>{closeModal();markBackedUp();showToast("バックアップファイルを保存しました",null,true);},300);};
-  document.getElementById("mTxt").onclick=()=>{closeModal();document.getElementById("bExport").click();setTimeout(()=>{const t=document.getElementById("mText");if(t)t.click();},50);};
-}
-
 async function restore(d){
   if(!d)throw 0; const st=d.state||(d.read?d:null); if(!st||typeof st.read!=="object")throw 0;
   state=norm(st);state.updatedAt=Date.now();
@@ -1151,16 +1062,16 @@ const nx0=nextChapter(); if(nx0) tab=Math.floor(nx0.vi/10);
 try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();}catch(e){}
 function renderBackupNote(){
   const el=document.getElementById("bkNote");if(!el)return;
-  const has=Object.keys(state.read).length||Object.keys(state.notes||{}).length||Object.keys(state.pages||{}).length;
-  const changed=(state.updatedAt||0)>(state.lastBackupAt||0);
-  const old=!state.lastBackup||diffDays(state.lastBackup,today())>=3;
-  const due=has&&!window.claude&&AB.status!=="on"&&changed&&old&&state.bkSnooze!==today();
+  const has=Object.keys(state.read).length||Object.keys(state.notes||{}).length||Object.keys(state.pages||{}).length||Object.keys(PDB.meta||{}).length;
+  const u=state.updatedAt||0;
+  const due=has&&!window.claude&&u>(state.lastBackupAt||0)&&u>(state.bkLaterAt||0);
   el.style.display=due?"":"none";
-  if(due)el.innerHTML=`💾 ${state.lastBackup?`最後のバックアップから${diffDays(state.lastBackup,today())}日たちました。`:"まだバックアップがありません。"}記録を守るために、1タップで保存しておきましょう。<span style="display:flex;gap:6px;margin-top:8px"><button class="btn btn-red btn-sm" id="bkNow">今すぐ保存</button><button class="btn btn-ghost btn-sm" id="bkLater">あとで</button></span>`;
-  if(due){document.getElementById("bkNow").onclick=()=>quickBackup();
-    document.getElementById("bkLater").onclick=()=>{state.bkSnooze=today();saveLocal();renderBackupNote();};}
+  if(!due)return;
+  el.innerHTML=`💾 記録が変更されました。バックアップを保存しますか？<span style="display:flex;gap:6px;margin-top:8px"><button class="btn btn-red btn-sm" id="bkNow">保存する</button><button class="btn btn-ghost btn-sm" id="bkLater">あとで</button></span>`;
+  document.getElementById("bkNow").onclick=()=>document.getElementById("bExport").click();
+  document.getElementById("bkLater").onclick=()=>{state.bkLaterAt=state.updatedAt;saveLocal();renderBackupNote();};
 }
-renderBackupNote();renderMid();abInit();if(!window.claude)scheduleAuto();
+renderBackupNote();renderMid();
 render();
 photosInit().then(()=>{renderGrid();if(view==="notes")renderNotebook();});
 if(window.claude&&typeof claude.use==="function") initCloud(); else setSync("このブラウザに保存中");
