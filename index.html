@@ -706,13 +706,13 @@ document.getElementById("heatSeg").addEventListener("click",e=>{const b=e.target
 
 /* ---------- flower shop ---------- */
 const SHOP_LV=[[0,"開店準備中"],[1,"小さな屋台"],[100,"街角の花屋"],[500,"人気の花屋"],[2000,"花いっぱいのお店"],[5000,"街一番のフラワーショップ"],[10000,"花の都の名店"],[TOTAL_PAGES,"満開の花屋さん"]];
-const SHOP_COL=["#c9c1b8","#f4a7b9","#e86a9a","#e2574c","#9b6fd1","#2fa39a","#e3a51b","#d7263d"];
+const SHOP_PINK="#f48fb1";
 const ITEMS=[
  [1,"🌱","はじめての芽"],[5,"🌷","チューリップ"],[10,"🌼","デイジー"],[20,"🪴","観葉植物"],[30,"🌻","ひまわり"],
  [45,"🌹","バラ"],[60,"🌸","桜の鉢"],[80,"💐","花束"],[100,"🧺","花かご"],[130,"🌺","ハイビスカス"],
  [160,"🍀","クローバー"],[200,"🌵","サボテン"],[250,"🎀","リボン"],[300,"🐈","看板ねこ",[150,188]],[360,"🌿","ハーブ"],
- [430,"🪣","ブリキのバケツ"],[500,"🦋","ちょうちょ",[150,80]],[600,"🌾","ドライフラワー"],[700,"🕯️","キャンドル"],[820,"🎁","ギフトボックス"],
- [950,"🍓","いちごの鉢"],[1100,"🫖","ティーポット"],[1300,"🐝","みつばち"],[1500,"🏵️","飾りの花"],[1750,"🌳","シンボルツリー"],
+ [430,"🪣","ブリキのバケツ"],[500,"💎","ダイヤモンド",[150,80]],[600,"🌾","ドライフラワー"],[700,"🕯️","キャンドル"],[820,"🎁","ギフトボックス"],
+ [950,"🍓","いちごの鉢"],[1100,"🫖","ティーポット"],[1300,"RUBY","ルビー"],[1500,"🏵️","飾りの花"],[1750,"🌳","シンボルツリー"],
  [2000,"🪑","ベンチ"],[2300,"🎐","風鈴"],[2600,"🍋","レモンの木"],[3000,"📮","ポスト"],[3400,"🧸","くまのぬいぐるみ"],
  [3800,"🏮","灯り"],[4300,"🍄","きのこの置物"],[4800,"🐦","ことり"],[5400,"🌈","虹"],[6000,"🎈","風船"],
  [6700,"🌙","月の飾り"],[7400,"⭐","星の飾り"],[8200,"🕊️","はと"],[9000,"🎊","くす玉"],[10000,"👑","王冠のディスプレイ"],
@@ -724,25 +724,28 @@ const ITEMS=[
   slots.push([128,160],[172,160],[42,32],[258,32],[66,32],[234,32],[22,160],[278,160]);
   let i=0;ITEMS.forEach(it=>{if(!it[3])it[3]=slots[i++]||[150,60];});
 })();
+const RUBY_SVG='<polygon points="-7,-2.5 -4,-6.5 4,-6.5 7,-2.5 0,7" fill="#d7263d" stroke="#9e1b2d" stroke-width=".8" stroke-linejoin="round"/><polyline points="-7,-2.5 7,-2.5" stroke="#ff8fa3" stroke-width=".7" fill="none"/><polyline points="-4,-6.5 -2,-2.5 0,7 2,-2.5 4,-6.5" stroke="#ff8fa3" stroke-width=".6" fill="none"/>';
+function icT(it){return it[1]==="RUBY"?"":it[1]+" ";}
+function icHTML(it){return it[1]==="RUBY"?`<svg viewBox="-8 -8 16 16" width="22" height="22">${RUBY_SVG}</svg>`:it[1];}
 function shopLevel(n){let lv=0;SHOP_LV.forEach((x,i)=>{if(n>=x[0])lv=i;});return lv;}
 function shopUnlocked(n){return ITEMS.filter(it=>n>=it[0]);}
 let shopShownN=null;
 function renderShop(){
-  const n=pagesTotal(),lv=shopLevel(n),col=SHOP_COL[lv],got=shopUnlocked(n);
+  const n=pagesTotal(),lv=shopLevel(n),col=SHOP_PINK,got=shopUnlocked(n);
   const before=Math.max(0,n-((state.pages||{})[today()]||0));
   const name=esc(state.shopName||"わたしの花屋さん");
   let aw="";for(let i=0;i<13;i++){const x=20+i*20;aw+=`<rect x="${x}" y="50" width="20" height="14" fill="${i%2?"#fff":col}"/><path d="M${x} 64 a10 7 0 0 0 20 0z" fill="${i%2?"#fff":col}"/>`;}
   let lights="";if(lv>=4){for(let i=0;i<14;i++){const x=24+i*19;lights+=`<circle cx="${x}" cy="${76+(i%2?3:0)}" r="2.2" fill="${["#ffd34d","#ff8fab","#8fd3ff"][i%3]}"/>`;}lights=`<path d="M22 76 Q150 86 278 76" stroke="#8a7a6a" stroke-width=".6" fill="none"/>`+lights;}
   const boxes=lv>=3?`<rect x="32" y="137" width="80" height="7" rx="2" fill="#7bb661"/><rect x="188" y="137" width="80" height="7" rx="2" fill="#7bb661"/>`:"";
   const shelves=[99,116,133].map(y=>`<line x1="36" y1="${y}" x2="108" y2="${y}" stroke="#d8c7b4" stroke-width="1.2"/><line x1="192" y1="${y}" x2="264" y2="${y}" stroke="#d8c7b4" stroke-width="1.2"/>`).join("");
-  const items=got.map(it=>`<text class="it${shopShownN!==null&&it[0]>shopShownN?" new":""}" x="${it[3][0]}" y="${it[3][1]}" font-size="${it[1]==="🌈"?20:15}" text-anchor="middle" dominant-baseline="central"><title>${it[2]}</title>${it[1]}</text>`).join("");
+  const items=got.map(it=>it[1]==="RUBY"?`<g class="it${shopShownN!==null&&it[0]>shopShownN?" new":""}" transform="translate(${it[3][0]} ${it[3][1]})"><title>${it[2]}</title>${RUBY_SVG}</g>`:`<text class="it${shopShownN!==null&&it[0]>shopShownN?" new":""}" x="${it[3][0]}" y="${it[3][1]}" font-size="${it[1]==="🌈"?20:15}" text-anchor="middle" dominant-baseline="central"><title>${it[2]}</title>${it[1]}</text>`).join("");
   const closed=n===0?`<rect x="60" y="150" width="180" height="22" rx="11" fill="#fff" stroke="${col}"/><text x="150" y="161" font-size="9.5" text-anchor="middle" dominant-baseline="central" fill="#7a6f68">1ページ読むと開店します</text>`:"";
   document.getElementById("shopScene").innerHTML=`<svg viewBox="0 0 300 200" role="img" aria-label="花屋さんの絵">
   <rect width="300" height="200" fill="${lv>=6?"#fff4d6":"#fdf3e7"}"/>
   ${lv>=1?`<circle cx="276" cy="16" r="9" fill="#ffd56b" opacity=".8"/>`:""}
   <rect x="20" y="44" width="260" height="126" fill="#fffaf2" stroke="#e2d5c6"/>
   <rect x="14" y="40" width="272" height="8" rx="2" fill="#b98a6a"/>
-  <g class="sign" id="shopSign"><rect x="88" y="10" width="124" height="27" rx="6" fill="#fff" stroke="${lv>=6?"#e3a51b":col}" stroke-width="${lv>=6?2.5:1.5}"/><text x="150" y="24" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="central" fill="#5b4636">${name}</text></g>
+  <g class="sign" id="shopSign"><rect x="88" y="10" width="124" height="27" rx="6" fill="#fff" stroke="${col}" stroke-width="${lv>=6?2.8:2}"/><text x="150" y="24" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="central" fill="#5b4636">${name}</text></g>
   ${aw}${lights}
   <rect x="34" y="78" width="76" height="58" fill="#eaf5fb" stroke="#c9b8a6"/><rect x="190" y="78" width="76" height="58" fill="#eaf5fb" stroke="#c9b8a6"/>
   ${shelves}${boxes}
@@ -755,10 +758,10 @@ function renderShop(){
   const lo=prevT?prevT[0]:0,pct=nx?Math.min(100,(n-lo)/(nx[0]-lo)*100):100;
   const todayNew=got.filter(it=>it[0]>before);
   document.getElementById("shopInfo").innerHTML=`<div class="shop-top"><span class="lv"><small>レベル${lv}</small>${SHOP_LV[lv][1]}</span><span style="font-size:13px">お店の花 <b style="font-size:18px">${n.toLocaleString()}</b> 本</span></div>
-  ${nx?`<div class="shop-next">次の入荷：<b>${nx[1]} ${nx[2]}</b>　あと <b>${(nx[0]-n).toLocaleString()}</b> ページ</div><div class="bar"><div style="width:${pct}%"></div></div>`:`<div class="shop-next">🎉 すべての品物がそろいました！</div>`}
-  ${todayNew.length?`<div class="shop-today">今日の入荷：${todayNew.map(it=>it[1]+" "+it[2]).join("、")}</div>`:""}
+  ${nx?`<div class="shop-next">次の入荷：<b>${icT(nx)}${nx[2]}</b>　あと <b>${(nx[0]-n).toLocaleString()}</b> ページ</div><div class="bar"><div style="width:${pct}%"></div></div>`:`<div class="shop-next">🎉 すべての品物がそろいました！</div>`}
+  ${todayNew.length?`<div class="shop-today">今日の入荷：${todayNew.map(it=>icT(it)+it[2]).join("、")}</div>`:""}
   <div style="font-size:12px;color:var(--sub);margin-top:10px">コレクション ${got.length} / ${ITEMS.length}</div>
-  <div class="shop-coll">${ITEMS.map(it=>`<span class="${n>=it[0]?"":"lock"}" title="${n>=it[0]?it[2]:`${it[0].toLocaleString()}ページで入荷`}">${it[1]}</span>`).join("")}</div>`;
+  <div class="shop-coll">${ITEMS.map(it=>`<span class="${n>=it[0]?"":"lock"}" title="${n>=it[0]?it[2]:`${it[0].toLocaleString()}ページで入荷`}">${icHTML(it)}</span>`).join("")}</div>`;
 }
 function renameShop(){
   openModal(`<div class="big">🏪</div><h3>お店の名前</h3><p>看板に表示する名前を決めましょう。</p><input id="shopNameIn" maxlength="12" value="${esc(state.shopName||"わたしの花屋さん")}" style="width:100%;font-family:inherit;font-size:16px;border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:14px;text-align:center"><div class="acts"><button class="btn btn-ghost" id="mCancel">やめる</button><button class="btn btn-red" id="mOk">決定</button></div>`);
@@ -774,7 +777,7 @@ function shopNews(b,a){ // returns message for newly unlocked items / level-up, 
 }
 function shopAnnounce(news,extra){
   if(!news){if(extra)showToast(extra);return;}
-  const names=news.items.map(it=>it[1]+" "+it[2]).join("、");
+  const names=news.items.map(it=>icT(it)+it[2]).join("、");
   if(news.level!==null){
     celebrate("🏪",`お店がレベルアップ！`,`「${SHOP_LV[news.level][1]}」になりました。${names?`<br>入荷：${names}`:""}${extra?`<br><span style="font-size:12px">${extra}</span>`:""}`,true,null);
   } else {showToast(`${names} が入荷しました！${extra?"　"+extra:""}`);confetti(50);}
