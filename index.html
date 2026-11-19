@@ -770,8 +770,8 @@ document.getElementById("toastUndo").onclick=()=>{if(!undoSnap)return;state=JSON
 
 const modal=document.getElementById("modal"),mbox=document.getElementById("modalBox");
 /* ---------- back gesture / back button closes the top screen ---------- */
-let navGuard=false;
-function ensureGuard(){if(navGuard)return;try{history.pushState({snkLayer:1},"");navGuard=true;}catch(e){}}
+// 画面を開くたびに（タップした瞬間に）履歴を1つ積む。ブラウザはタップなしで積んだ履歴を「戻る」で飛ばすため。
+function pushLayer(){try{history.pushState({snkLayer:1},"");}catch(e){}}
 function topLayer(){
   if(cam.classList.contains("show"))return "cam";
   if(viewer.classList.contains("show"))return "viewer";
@@ -779,12 +779,11 @@ function topLayer(){
   if(sheet.classList.contains("show"))return "sheet";
   return null;}
 window.addEventListener("popstate",()=>{
-  navGuard=false;const t=topLayer();
-  if(!t){history.back();return;}
+  const t=topLayer();
+  if(!t){history.back();return;} // ボタンで閉じた画面の分の履歴は読み飛ばす
   if(t==="cam")closeCam();else if(t==="viewer")closeViewer();else if(t==="modal")closeModal();else closeSheet();
-  if(topLayer())ensureGuard();
 });
-function openModal(html){mbox.innerHTML=html;modal.classList.add("show");ensureGuard();}
+function openModal(html){const was=modal.classList.contains("show");mbox.innerHTML=html;modal.classList.add("show");if(!was)pushLayer();}
 function closeModal(){modal.classList.remove("show");}
 modal.addEventListener("click",e=>{if(e.target===modal)closeModal();});
 function celebrate(emoji,title,body,big,lastKey){
@@ -833,7 +832,7 @@ document.getElementById("nbList").addEventListener("click",e=>{const c=e.target.
 /* ---------- chapter sheet ---------- */
 const sheet=document.getElementById("sheet"),sbox=document.getElementById("sheetBox");
 let sheetKey=null,editingId=null,delArm=null;
-function openSheet(k){sheetKey=k;editingId=null;delArm=null;renderSheet();sheet.classList.add("show");ensureGuard();}
+function openSheet(k){sheetKey=k;editingId=null;delArm=null;const was=sheet.classList.contains("show");renderSheet();sheet.classList.add("show");if(!was)pushLayer();}
 function closeSheet(){const ta=document.getElementById("shText");if(ta&&ta.value.trim())saveNote();
   sheet.classList.remove("show");sheetKey=null;render();if(view==="notes")renderNotebook();}
 sheet.addEventListener("click",e=>{if(e.target===sheet)closeSheet();});
@@ -888,7 +887,7 @@ async function startStream(){
 }
 async function openCam(){
   if(!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)){document.getElementById("fCam").click();return;}
-  camShots=0;updCam();camMsg("カメラを起動しています…");cam.classList.add("show");ensureGuard();
+  camShots=0;updCam();camMsg("カメラを起動しています…");cam.classList.add("show");pushLayer();
   try{await startStream();}
   catch(e){closeCam();
     if(e&&(e.name==="NotAllowedError"||e.name==="SecurityError")) showToast("カメラの使用が許可されていません。ブラウザの設定でカメラを許可してください",null,true);
@@ -912,7 +911,7 @@ document.getElementById("camShut").onclick=async()=>{
 
 /* ---------- photo viewer ---------- */
 const viewer=document.getElementById("viewer");let vKey=null,vIdx=0,vArm=false;
-function openViewer(k,i){vKey=k;vIdx=i;vArm=false;showV();viewer.classList.add("show");ensureGuard();}
+function openViewer(k,i){vKey=k;vIdx=i;vArm=false;showV();const was=viewer.classList.contains("show");viewer.classList.add("show");if(!was)pushLayer();}
 function closeViewer(){viewer.classList.remove("show");if(sheetKey)renderSheet();}
 function showV(){const ids=PDB.meta[vKey]||[];if(!ids.length){viewer.classList.remove("show");return;}
   vIdx=(vIdx+ids.length)%ids.length;document.getElementById("vImg").src=PDB.urls[ids[vIdx]];
