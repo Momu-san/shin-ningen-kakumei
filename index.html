@@ -1206,6 +1206,16 @@ function renderBackupNote(){
   document.getElementById("bkNow").onclick=()=>document.getElementById("bExport").click();
   document.getElementById("bkLater").onclick=()=>{state.bkLaterAt=state.updatedAt;saveLocal();renderBackupNote();};
 }
+// アプリを開いたまま日付が変わったとき（スマホで翌日に再表示したときなど）、「今日」を更新する
+let shownDay=today();
+function checkNewDay(){
+  const t=today();if(t===shownDay)return;
+  shownDay=t;pgSel=t;const n=new Date();calY=n.getFullYear();calM=n.getMonth();render();
+}
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)checkNewDay();});
+window.addEventListener("focus",checkNewDay);
+window.addEventListener("pageshow",checkNewDay);
+setInterval(checkNewDay,60000);
 renderBackupNote();renderMid();
 render();
 photosInit().then(()=>{renderGrid();if(view==="notes")renderNotebook();});
