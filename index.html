@@ -1102,7 +1102,7 @@ function openMid(){
     <div class="rowf"><select id="midVol">${VOLS.map((_,i)=>`<option value="${i}" ${i===dv?"selected":""}>第${i+1}巻</option>`).join("")}</select><select id="midCh"></select></div>
     <label>② 今どこまで読んだか（ページ・任意）</label>
     <div class="rowf"><select id="midPVol">${VOL_PAGES.map((_,i)=>i===29?`<option value="29u">第30巻上</option><option value="29d">第30巻下</option>`:`<option value="${i}">第${i+1}巻</option>`).join("")}</select><span>の</span><input type="number" id="midPage" min="0" inputmode="numeric" placeholder="例：120" style="width:96px;text-align:right"><span>ページ目まで</span></div>
-    <div style="font-size:11px;color:var(--sub);margin-top:6px">空欄なら、①の巻を最後まで読んだ場合のみページを自動で計算します。</div>
+    <div style="font-size:11px;color:var(--sub);margin-top:6px">空欄なら、①の章までのページ数をおおよそで自動計算します。</div>
   </div>
   <div class="mid-prev" id="midPrev"></div>
   <div class="acts"><button class="btn btn-ghost" id="mCancel">やめる</button><button class="btn btn-red" id="mOk">入力する</button></div>`);
@@ -1116,7 +1116,9 @@ function openMid(){
     if(raw!==""){const pv=$("midPVol").value,vi=pv.startsWith("29")?29:+pv;let base=0;for(let i=0;i<vi;i++)base+=VOL_PAGES[i];
       if(pv==="29d")base+=VOL30_UP;const cap=pv==="29u"?VOL30_UP:pv==="29d"?VOL_PAGES[29]-VOL30_UP:VOL_PAGES[vi];
       pages=base+Math.min(Math.max(0,+raw||0),cap);how="入力したページから計算";}
-    else if(ci===VOLS[v].length-1){let base=0;for(let i=0;i<=v;i++)base+=VOL_PAGES[i];pages=base;how="巻の最後まで読んだとして計算";}
+    else{let base=0;for(let i=0;i<v;i++)base+=VOL_PAGES[i];
+      if(ci===VOLS[v].length-1){pages=base+VOL_PAGES[v];how="巻の最後まで読んだとして計算";}
+      else{pages=base+Math.round(VOL_PAGES[v]*(ci+1)/VOLS[v].length);how="章の数からおおよそで計算";}}
     return {upto,pages,how};};
   const prev=()=>{const r=calc(),c=ALL[r.upto-1];
     $("midPrev").innerHTML=`✓ 第1巻「旭日」〜 第${c.vi+1}巻「${c.name}」の <b>${r.upto}章</b>を読了にします（全体の${Math.floor(r.upto/TOTAL*100)}%）<br>`+
