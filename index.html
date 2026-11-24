@@ -177,6 +177,10 @@ canvas#fx{position:fixed;inset:0;pointer-events:none;z-index:70}
 .mid-form label{display:block;font-weight:700;margin:14px 0 6px}
 .mid-form select,.mid-form input{font-family:inherit;font-size:15px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:#fff}
 .mid-form .rowf{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.mid-line{gap:8px!important;font-size:14px;font-weight:700;justify-content:center}
+.mid-line .grp{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.mid-line select,.mid-line input{padding:7px 5px!important;font-size:15px!important}
+.modal .box.wide{max-width:500px}
 .mid-prev{background:#faf6f1;border-radius:12px;padding:10px 12px;margin:16px 0;font-size:13px;line-height:1.8;text-align:left}
 .sec{font-size:14px;font-weight:700;margin:14px 0 8px;display:flex;align-items:center;gap:6px}
 .sheet textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-family:inherit;font-size:15px;line-height:1.7;resize:vertical;margin:0}
@@ -944,7 +948,7 @@ window.addEventListener("popstate",()=>{
   if(!t){history.back();return;} // ボタンで閉じた画面の分の履歴は読み飛ばす
   if(t==="cam")closeCam();else if(t==="viewer")closeViewer();else if(t==="modal")closeModal();else closeSheet();
 });
-function openModal(html){const was=modal.classList.contains("show");mbox.innerHTML=html;modal.classList.add("show");if(!was)pushLayer();}
+function openModal(html){const was=modal.classList.contains("show");mbox.classList.remove("wide");mbox.innerHTML=html;modal.classList.add("show");if(!was)pushLayer();}
 function closeModal(){modal.classList.remove("show");}
 modal.addEventListener("click",e=>{if(e.target===modal)closeModal();});
 function celebrate(emoji,title,body,big,lastKey){
@@ -1103,40 +1107,40 @@ function openMid(){
   const nx=nextChapter()||ALL[ALL.length-1];
   openModal(`<div class="big">📖</div><h3>読んだところまで入力</h3>
   <div class="mid-form">
-    <label>① 今読んでいる巻と章</label>
-    <div class="rowf"><select id="midVol">${VOLS.map((_,i)=>`<option value="${i}" ${i===nx.vi?"selected":""}>第${i+1}巻</option>`).join("")}</select><select id="midCh"></select></div>
-    <label style="font-weight:500;display:flex;align-items:center;gap:6px;margin-top:8px"><input type="checkbox" id="midDoneCh" style="width:18px;height:18px">この章を最後まで読み終えた</label>
-    <label>② 何ページ目まで読みましたか？</label>
-    <div class="rowf"><span id="midBook"></span><span>の</span><input type="number" id="midPage" min="1" inputmode="numeric" placeholder="例：120" style="width:96px;text-align:right"><span>ページ目まで</span></div>
-    <div style="font-size:11px;color:var(--sub);margin-top:6px" id="midHint"></div>
+    <div class="rowf mid-line"><span class="grp"><select id="midVol" aria-label="巻">${VOLS.map((_,i)=>`<option value="${i}" ${i===nx.vi?"selected":""}>${i+1}</option>`).join("")}</select>巻<select id="midCh" aria-label="章"></select>章</span><span class="grp"><input type="number" id="midPage" min="1" inputmode="numeric" placeholder="ページ" aria-label="ページ" style="width:68px;text-align:right">ページまで読んだ</span></div>
+    <div style="font-size:12px;margin-top:6px" id="midHint"></div>
+    <label style="font-weight:500;display:flex;align-items:center;gap:6px;margin-top:10px;font-size:13px"><input type="checkbox" id="midDoneCh" style="width:18px;height:18px">この章を最後まで読み終えた</label>
   </div>
   <div class="mid-prev" id="midPrev"></div>
   <div class="acts"><button class="btn btn-ghost" id="mCancel">やめる</button><button class="btn btn-red" id="mOk">入力する</button></div>`);
+  mbox.classList.add("wide");
   const $=id=>document.getElementById(id);
-  const fillCh=(sel)=>{const v=+$("midVol").value;$("midCh").innerHTML=VOLS[v].map((n,ci)=>`<option value="${ci}" ${ci===sel?"selected":""}>${ci+1}. ${n}</option>`).join("");};
+  const fillCh=(sel)=>{const v=+$("midVol").value;$("midCh").innerHTML=VOLS[v].map((n,ci)=>`<option value="${ci}" ${ci===sel?"selected":""}>${n}</option>`).join("");};
   const calc=()=>{
     const vi=+$("midVol").value,ci=+$("midCh").value,done=$("midDoneCh").checked,bk=chapterBook(vi,ci),raw=$("midPage").value;
     const keys=[];ALL.forEach(c=>{if(c.vi<vi||(c.vi===vi&&(c.ci<ci||(done&&c.ci===ci))))keys.push(c.key);});
-    let pages,how;
-    if(raw!==""&&+raw>=1){pages=bk.base+Math.min(Math.round(+raw),bk.pages);how="入力したページ";}
-    else{const idx=bk.chs.indexOf(ci)+(done?1:0);pages=bk.base+Math.round(bk.pages*idx/bk.chs.length);how="ページ未入力のため、章の数からおおよそで計算";}
-    return {vi,ci,done,bk,keys,pages,how};
+    const pg=raw===""?NaN:Math.round(+raw);
+    const ok=pg>=1&&pg<=bk.pages;
+    return {vi,ci,done,bk,keys,pg,ok,pages:ok?bk.base+pg:null};
   };
   const prev=()=>{
     const r=calc(),c=ALL.find(x=>x.vi===r.vi&&x.ci===r.ci);
-    $("midBook").textContent=r.bk.label;
-    $("midHint").textContent=`${r.bk.label}は全${r.bk.pages}ページです。（ページは空欄でも入力できます）`;
+    const raw=$("midPage").value;
+    $("midHint").innerHTML=raw!==""&&!r.ok?`<span style="color:var(--red)">1〜${r.bk.pages}の数を入れてください（${r.bk.label}は全${r.bk.pages}ページ）</span>`:`<span style="color:var(--sub)">${r.bk.label}は全${r.bk.pages}ページです。${r.bk.label.includes("30巻")?"上・下それぞれの本のページで入れてください。":""}</span>`;
     const last=r.keys.length?ALL.find(x=>x.key===r.keys[r.keys.length-1]):null;
     $("midPrev").innerHTML=(last?`✓ 第1巻「旭日」〜 第${last.vi+1}巻「${last.name}」の <b>${r.keys.length}章</b>を読了にします`:`✓ 読了になる章はまだありません`)+
       (r.done?"":`<br>📖 第${c.vi+1}巻「${c.name}」は読んでいる途中として記録します`)+
-      `<br>📄 ページ：<b>${r.pages.toLocaleString()}</b> / ${TOTAL_PAGES.toLocaleString()}（${(r.pages/TOTAL_PAGES*100).toFixed(1)}%）<span style="color:var(--sub)">　${r.how}</span>`;
+      (r.ok?`<br>📄 ページ：<b>${r.pages.toLocaleString()}</b> / ${TOTAL_PAGES.toLocaleString()}（${(r.pages/TOTAL_PAGES*100).toFixed(1)}%）`:`<br><span style="color:var(--sub)">📄 ページ数を入れると、全体の進み具合が表示されます</span>`);
   };
   fillCh(nx.ci);prev();
   $("midVol").onchange=()=>{fillCh(0);prev();};
-  $("midCh").onchange=prev;$("midDoneCh").onchange=prev;$("midPage").oninput=prev;
+  $("midCh").onchange=prev;$("midDoneCh").onchange=prev;$("midPage").oninput=()=>{$("midPage").style.borderColor="";prev();};
   $("mCancel").onclick=closeModal;
   $("mOk").onclick=()=>{
-    const r=calc(),before=snapshot();
+    const r=calc();
+    if(!r.ok){const el=$("midPage");el.style.borderColor="var(--red)";el.focus();
+      if(el.value==="")$("midHint").innerHTML=`<span style="color:var(--red)">ページ数を入れてください（${r.bk.label}は全${r.bk.pages}ページ）</span>`;return;}
+    const before=snapshot();
     r.keys.forEach(k=>{if(!state.read[k])state.read[k]="pre";});
     state.prePages=r.pages;
     state.midDone=true;state.end=countRead()===TOTAL?(state.end||today()):null;state.updatedAt=Date.now();
