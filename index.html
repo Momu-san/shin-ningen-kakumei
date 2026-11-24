@@ -1092,61 +1092,58 @@ document.addEventListener("keydown",e=>{
   else if(e.key==="Escape"&&sheet.classList.contains("show"))closeSheet();});
 
 /* ---------- start from the middle ---------- */
-// 「第◯巻の◯ページ目まで」だけで入力。章の区切りのページは分からないため、
-// 巻のページ数を章の数で等分して、読み終えた章を推定する（第30巻は上＝前半3章、下＝後半3章）。
-function midSegments(){ // [{vi, label, pages, chs:[ci...]}] 30巻は上下に分ける
-  const seg=[];VOL_PAGES.forEach((pg,i)=>{
-    if(i===29){seg.push({vi:29,label:"第30巻上",pages:VOL30_UP,chs:[0,1,2]},{vi:29,label:"第30巻下",pages:pg-VOL30_UP,chs:[3,4,5]});}
-    else seg.push({vi:i,label:`第${i+1}巻`,pages:pg,chs:VOLS[i].map((_,ci)=>ci)});});
-  return seg;
+// 「第◯巻・どの章・何ページ目まで」を入力。選んだ章より前の章は読了、選んだ章は読んでいる途中
+// （「この章を読み終えた」にチェックすると、その章も読了）。
+function chapterBook(vi,ci){ // 第30巻は上（前半3章）と下（後半3章）に分かれる
+  let base=0;for(let i=0;i<vi;i++)base+=VOL_PAGES[i];
+  if(vi!==29)return {label:`第${vi+1}巻`,base,pages:VOL_PAGES[vi],chs:VOLS[vi].map((_,i)=>i)};
+  return ci<3?{label:"第30巻上",base,pages:VOL30_UP,chs:[0,1,2]}:{label:"第30巻下",base:base+VOL30_UP,pages:VOL_PAGES[29]-VOL30_UP,chs:[3,4,5]};
 }
 function openMid(){
-  const SEG=midSegments();
-  // 初期値：今の位置に近い巻
-  let cum=0,def=0;const tot=pagesTotal();
-  for(let i=0;i<SEG.length;i++){if(tot<cum+SEG[i].pages){def=i;break;}cum+=SEG[i].pages;def=i;}
+  const nx=nextChapter()||ALL[ALL.length-1];
   openModal(`<div class="big">📖</div><h3>読んだところまで入力</h3>
   <div class="mid-form">
-    <label>今どこまで読みましたか？</label>
-    <div class="rowf"><select id="midSeg">${SEG.map((g,i)=>`<option value="${i}" ${i===def?"selected":""}>${g.label}</option>`).join("")}</select><span>の</span><input type="number" id="midPage" min="1" inputmode="numeric" placeholder="例：120" style="width:96px;text-align:right"><span>ページ目まで</span></div>
+    <label>① 今読んでいる巻と章</label>
+    <div class="rowf"><select id="midVol">${VOLS.map((_,i)=>`<option value="${i}" ${i===nx.vi?"selected":""}>第${i+1}巻</option>`).join("")}</select><select id="midCh"></select></div>
+    <label style="font-weight:500;display:flex;align-items:center;gap:6px;margin-top:8px"><input type="checkbox" id="midDoneCh" style="width:18px;height:18px">この章を最後まで読み終えた</label>
+    <label>② 何ページ目まで読みましたか？</label>
+    <div class="rowf"><span id="midBook"></span><span>の</span><input type="number" id="midPage" min="1" inputmode="numeric" placeholder="例：120" style="width:96px;text-align:right"><span>ページ目まで</span></div>
     <div style="font-size:11px;color:var(--sub);margin-top:6px" id="midHint"></div>
   </div>
   <div class="mid-prev" id="midPrev"></div>
   <div class="acts"><button class="btn btn-ghost" id="mCancel">やめる</button><button class="btn btn-red" id="mOk">入力する</button></div>`);
   const $=id=>document.getElementById(id);
+  const fillCh=(sel)=>{const v=+$("midVol").value;$("midCh").innerHTML=VOLS[v].map((n,ci)=>`<option value="${ci}" ${ci===sel?"selected":""}>${ci+1}. ${n}</option>`).join("");};
   const calc=()=>{
-    const si=+$("midSeg").value,g=SEG[si],raw=$("midPage").value;
-    if(raw===""||+raw<1)return null;
-    const pg=Math.min(Math.round(+raw),g.pages);
-    let base=0;for(let i=0;i<si;i++)base+=SEG[i].pages;
-    const per=g.pages/g.chs.length,doneInSeg=pg>=g.pages?g.chs.length:Math.floor(pg/per);
-    const keys=[];for(let i=0;i<si;i++)SEG[i].chs.forEach(ci=>keys.push((SEG[i].vi+1)+"-"+(ci+1)));
-    g.chs.slice(0,doneInSeg).forEach(ci=>keys.push((g.vi+1)+"-"+(ci+1)));
-    return {pages:base+pg,pg,g,keys};
+    const vi=+$("midVol").value,ci=+$("midCh").value,done=$("midDoneCh").checked,bk=chapterBook(vi,ci),raw=$("midPage").value;
+    const keys=[];ALL.forEach(c=>{if(c.vi<vi||(c.vi===vi&&(c.ci<ci||(done&&c.ci===ci))))keys.push(c.key);});
+    let pages,how;
+    if(raw!==""&&+raw>=1){pages=bk.base+Math.min(Math.round(+raw),bk.pages);how="入力したページ";}
+    else{const idx=bk.chs.indexOf(ci)+(done?1:0);pages=bk.base+Math.round(bk.pages*idx/bk.chs.length);how="ページ未入力のため、章の数からおおよそで計算";}
+    return {vi,ci,done,bk,keys,pages,how};
   };
   const prev=()=>{
-    const g=SEG[+$("midSeg").value];$("midHint").textContent=`${g.label}は全${g.pages}ページです。読み終えた巻なら ${g.pages} と入れてください。`;
-    const r=calc();
-    if(!r){$("midPrev").innerHTML=`<span style="color:var(--sub)">ページ数を入れると、読了になる章がここに表示されます。</span>`;return;}
-    const last=r.keys.length?ALL.find(c=>c.key===r.keys[r.keys.length-1]):null;
-    const cur=ALL.find(c=>!r.keys.includes(c.key));
-    $("midPrev").innerHTML=`📄 ページ：<b>${r.pages.toLocaleString()}</b> / ${TOTAL_PAGES.toLocaleString()}（${(r.pages/TOTAL_PAGES*100).toFixed(1)}%）<br>`+
-      (last?`✓ 第1巻「旭日」〜 第${last.vi+1}巻「${last.name}」の <b>${r.keys.length}章</b>を読了にします`:`✓ 読了になる章はまだありません`)+
-      (cur?`<br>📖 今読んでいるのは、第${cur.vi+1}巻「${cur.name}」あたりです`:"")+
-      `<br><span style="color:var(--sub)">章の区切りはページ数から推定しています。違っていたら、あとで章名をタップして直せます。</span>`;
+    const r=calc(),c=ALL.find(x=>x.vi===r.vi&&x.ci===r.ci);
+    $("midBook").textContent=r.bk.label;
+    $("midHint").textContent=`${r.bk.label}は全${r.bk.pages}ページです。（ページは空欄でも入力できます）`;
+    const last=r.keys.length?ALL.find(x=>x.key===r.keys[r.keys.length-1]):null;
+    $("midPrev").innerHTML=(last?`✓ 第1巻「旭日」〜 第${last.vi+1}巻「${last.name}」の <b>${r.keys.length}章</b>を読了にします`:`✓ 読了になる章はまだありません`)+
+      (r.done?"":`<br>📖 第${c.vi+1}巻「${c.name}」は読んでいる途中として記録します`)+
+      `<br>📄 ページ：<b>${r.pages.toLocaleString()}</b> / ${TOTAL_PAGES.toLocaleString()}（${(r.pages/TOTAL_PAGES*100).toFixed(1)}%）<span style="color:var(--sub)">　${r.how}</span>`;
   };
-  prev();
-  $("midSeg").onchange=prev;$("midPage").oninput=prev;
+  fillCh(nx.ci);prev();
+  $("midVol").onchange=()=>{fillCh(0);prev();};
+  $("midCh").onchange=prev;$("midDoneCh").onchange=prev;$("midPage").oninput=prev;
   $("mCancel").onclick=closeModal;
   $("mOk").onclick=()=>{
-    const r=calc();if(!r){$("midPage").focus();$("midPage").style.borderColor="var(--red)";return;}
-    const before=snapshot();
+    const r=calc(),before=snapshot();
     r.keys.forEach(k=>{if(!state.read[k])state.read[k]="pre";});
     state.prePages=r.pages;
     state.midDone=true;state.end=countRead()===TOTAL?(state.end||today()):null;state.updatedAt=Date.now();
-    undoSnap=before;const nx=nextChapter();tab=nx?Math.floor(nx.vi/10):2;
+    undoSnap=before;const nx2=nextChapter();tab=nx2?Math.floor(nx2.vi/10):2;
     render();queueSave(true);renderMid();closeModal();
-    celebrate("🌸","入力しました！",`${r.g.label}の${r.pg}ページ目まで入力しました。${r.keys.length?`<br>${r.keys.length}章を読了にしました。`:""}<br>ここから一緒に読み進めましょう！`,true,null);
+    const c=ALL.find(x=>x.vi===r.vi&&x.ci===r.ci);
+    celebrate("🌸","入力しました！",`${r.keys.length}章を読了にしました。${r.done?"":`<br>今は第${c.vi+1}巻「${esc(c.name)}」を読んでいるところですね。`}<br>ここから一緒に読み進めましょう！`,true,null);
   };
 }
 function renderMid(){document.getElementById("midNote").style.display=(!state.midDone&&countRead()===0&&!pgSum("0000","9999"))?"":"none";}
